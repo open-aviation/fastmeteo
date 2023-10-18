@@ -1,0 +1,43 @@
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "metmesh"
+description = "Fast interpolation for ERA5 data with Zarr"
+version = "0.1.0"
+authors = ["Junzi Sun <j.sun-1@tudelft.nl>"]
+license = "GNU Lesser General Public License v3 (LGPLv3)"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Programming Language :: Python :: 3",
+]
+packages = [{ include = "metmesh", from = "." }]
+include = ["LICENSE"]
+
+[tool.poetry.dependencies]
+fastapi = "*"
+uvicorn = "*"
+requests = "*"
+numpy = "*"
+click = "*"
+pandas = "*"
+xarray = "*"
+fsspec = "*"
+zarr = "*"
+dask = "*"
+
+[tool.poetry.scripts]
+metmesh-serve = "metmesh.server:main"
+
+[tool.black]
+target_version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
