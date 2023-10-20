@@ -47,12 +47,12 @@ class Grid:
 
         return selected
 
-    def sync_local(self, start: np.datetime64, stop: np.datetime64) -> None:
+    def sync_local(self, start: np.datetime64, stop: np.datetime64):
         # open local zarr storage, create if not exist
         try:
             self.local = xr.open_zarr(self.local_store, consolidated=True)
         except KeyError:
-            print(f"init local zarr from google arco era5, hour: {start.round('1h')}")
+            print(f"init local zarr from google arco era5, hour: {start.floor('1h')}")
             selected = self.select_remote_hour(start.round("1h").to_datetime64())
             selected.to_zarr(self.local_store, mode="w", consolidated=True)
             self.local = xr.open_zarr(self.local_store, consolidated=True)
@@ -63,7 +63,7 @@ class Grid:
             if self.local.sel(time=self.local.time.isin(hour)).time.size > 0:
                 continue
 
-            print(f"sync zarr from google arco era5, hour: {hour_dt}")
+            print(f"syncing zarr from google arco-era5, hour: {hour_dt}")
             selected = self.select_remote_hour(hour)
 
             if selected.time.size == 0:
@@ -75,6 +75,9 @@ class Grid:
                     self.local_store, mode="a", append_dim="time", consolidated=True
                 )
 
+        # close to ensure the write is complete
+        self.local.close()
+
     def interpolate(self, flight: pd.DataFrame) -> pd.DataFrame:
         times = pd.to_datetime(flight.timestamp)
 
@@ -84,6 +87,8 @@ class Grid:
         stop = times.max()
 
         self.sync_local(start, stop)
+
+        self.local = xr.open_zarr(self.local_store, consolidated=True)
 
         era5_cropped = self.local.sel(
             time=self.local.time.isin(
