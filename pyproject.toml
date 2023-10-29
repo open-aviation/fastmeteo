@@ -4,7 +4,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "metmesh"
+name = "fastmeteo"
 description = "Fast interpolation for ERA5 data with Zarr"
 version = "0.1.0"
 authors = ["Junzi Sun <j.sun-1@tudelft.nl>"]
@@ -17,7 +17,7 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3",
 ]
-packages = [{ include = "metmesh", from = "." }]
+packages = [{ include = "fastmeteo", from = "." }]
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
@@ -31,9 +31,10 @@ xarray = "*"
 fsspec = "*"
 zarr = "*"
 dask = "*"
+gcsfs = "*"
 
 [tool.poetry.scripts]
-metmesh-serve = "metmesh.server:main"
+fastmeteo-serve = "fastmeteo.server:main"
 
 [tool.black]
 target_version = ['py38', 'py39', 'py310', 'py311']

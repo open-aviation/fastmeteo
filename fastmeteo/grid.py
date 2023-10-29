@@ -81,7 +81,9 @@ class Grid:
     def interpolate(self, flight: pd.DataFrame) -> pd.DataFrame:
         times = pd.to_datetime(flight.timestamp)
 
-        flight = flight.assign(longitude_360=lambda d: d.longitude % 360)
+        flight = flight.reset_index(drop=True).assign(
+            longitude_360=lambda d: d.longitude % 360
+        )
 
         start = times.min()
         stop = times.max()
