@@ -1,6 +1,6 @@
 import pandas as pd
 
-from metmesh import Client
+from fastmeteo import Client
 
 if __name__ == "__main__":
     flight = pd.DataFrame(

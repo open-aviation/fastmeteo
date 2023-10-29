@@ -1,5 +1,5 @@
 import pandas as pd
-from metmesh import Grid
+from fastmeteo import Grid
 
 mmg = Grid(local_store="/tmp/era5-zarr")
 
