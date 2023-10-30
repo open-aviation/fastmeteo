@@ -23,12 +23,9 @@ You can get the weather information for a given flight or position with the foll
 
 
 ```python
+
 import pandas as pd
 from fastmeteo import Grid
-
-# define the location for local store
-mmg = Grid(local_store="/tmp/era5-zarr")
-
 
 flight = pd.DataFrame(
     {
@@ -39,8 +36,12 @@ flight = pd.DataFrame(
     }
 )
 
+# define the location for local store
+mmg = Grid(local_store="/tmp/era5-zarr")
+
 # obtain weather information
 flight_new = mmg.interpolate(flight)
+
 ```
 
 ### Server-client mode
@@ -54,8 +55,19 @@ fastmeteo-serve --local-store /tmp/era5-zarr
 At the client side, the following code can be used to submit and get the process flight with meteorology data.
 
 ```python
+import pandas as pd
 from fastmeteo import Client
 
+flight = pd.DataFrame(
+    {
+        "timestamp": ["2021-10-12T01:10:00", "2021-10-12T01:20:00"],
+        "latitude": [40.3, 42.5],
+        "longitude": [4.2, 6.6],
+        "altitude": [25_000, 30_000],
+    }
+)
+
+# define the client object
 client = Client()
 
 # send the flight and receive the new DataFrame

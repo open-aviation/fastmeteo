@@ -1,7 +1,6 @@
 import pandas as pd
 from fastmeteo import Grid
 
-mmg = Grid(local_store="/tmp/era5-zarr")
 
 flight = pd.DataFrame(
     {
@@ -13,8 +12,11 @@ flight = pd.DataFrame(
     }
 )
 
-print(flight)
+# define the location for local store
+mmg = Grid(local_store="/tmp/era5-zarr")
 
+# obtain weather information
 flight_new = mmg.interpolate(flight)
 
+print(flight)
 print(flight_new)
