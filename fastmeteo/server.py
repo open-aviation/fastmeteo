@@ -7,7 +7,7 @@ from typing import Any, Dict
 import pandas as pd
 from . import Grid
 
-mmg = Grid()
+fmg = Grid()
 app = FastAPI()
 
 
@@ -27,7 +27,7 @@ def serialize(flight_df: pd.DataFrame) -> dict:
 @app.post("/submit_flight/", response_model=Dict)
 async def submit_flight(flight_request: FlightRequest):
     flight = deserialize(flight_request.data)
-    flight_new = mmg.interpolate(flight)
+    flight_new = fmg.interpolate(flight)
     return serialize(flight_new)
 
 
@@ -35,7 +35,7 @@ async def submit_flight(flight_request: FlightRequest):
 @click.option("--local-store", required="true", help="local era5 zarr store path")
 @click.option("--port", default=9800, help="listening on port")
 def main(local_store, port):
-    mmg.set_local_path(local_store)
+    fmg.set_local_path(local_store)
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 

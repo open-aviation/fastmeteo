@@ -13,10 +13,10 @@ flight = pd.DataFrame(
 )
 
 # define the location for local store
-mmg = Grid(local_store="/tmp/era5-zarr")
+fmg = Grid(local_store="/tmp/era5-zarr")
 
 # obtain weather information
-flight_new = mmg.interpolate(flight)
+flight_new = fmg.interpolate(flight)
 
 print(flight)
 print(flight_new)
