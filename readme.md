@@ -2,25 +2,34 @@
 
 A super-fast Python package to obtain meteorological parameters for your flight trajectories.
 
-
 ## Install
 
+### stable version
+
 ```
-# stable version
 pip install fastmeteo
 
-# development version
+```
+
+### development version
+
+```
 pip install git+https://github.com/junzis/fastmeteo
 ```
 
+or, if you prefer `poetry`:
 
+```
+git clone https://github.com/junzis/fastmeteo
+cd fastmeteo
+poetry install
+```
 
 ## Usage
 
 ### Local mode
 
-You can get the weather information for a given flight or position with the following code, which the basic information of time, latitude, longitude, and altitude.
-
+You can get the weather information for a given flight or position with the following code. Basic information on time, latitude, longitude, and altitude is needed.
 
 ```python
 
@@ -46,9 +55,9 @@ flight_new = fmg.interpolate(flight)
 
 ### Server-client mode
 
-When running the tool in a server-client mode. The following script can be used to start a FastAPI service on the server, which handles the flight date request, obtaining Google ARCO data if the partition is not on the server, perform the interpolation of weather data, and return the final data to the client.
+When running the tool in a server-client mode. The following script can be used to start a FastAPI service on the server. It handles the flight date request and obtains Google ARCO data if the partition is not on the server. After that, it will perform the interpolation of weather data and return the final data to the client.
 
-```sh
+```
 fastmeteo-serve --local-store /tmp/era5-zarr
 ```
 

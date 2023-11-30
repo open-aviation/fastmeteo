@@ -6,10 +6,10 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "fastmeteo"
 description = "Fast interpolation for ERA5 data with Zarr"
-version = "0.1"
+version = "0.1.1"
 authors = ["Junzi Sun <j.sun-1@tudelft.nl>"]
 license = "GNU Lesser General Public License v3 (LGPLv3)"
-readme = "README.md"
+readme = "readme.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -21,17 +21,18 @@ packages = [{ include = "fastmeteo", from = "." }]
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
-fastapi = "*"
-uvicorn = "*"
-requests = "*"
-numpy = "*"
-click = "*"
-pandas = "*"
-xarray = "*"
-fsspec = "*"
-zarr = "*"
-dask = "*"
-gcsfs = "*"
+python = ">=3.9,<4.0"
+fastapi = "^0.104.1"
+uvicorn = "^0.24.0.post1"
+requests = "^2.31.0"
+numpy = "^1.26.2"
+click = "^8.1.7"
+pandas = "^2.1.3"
+xarray = "^2023.11.0"
+fsspec = "^2023.10.0"
+zarr = "^2.16.1"
+dask = "^2023.11.0"
+gcsfs = "^2023.10.0"
 
 [tool.poetry.scripts]
 fastmeteo-serve = "fastmeteo.server:main"

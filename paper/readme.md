@@ -2,6 +2,8 @@
 
 This repository accompanies the paper "Fast Contrail Estimation with OpenSky Data", providing Python notebooks, scripts, and datasets integral to this paper and its findings.
 
+The paper can be accessed at: https://journals.open.tudelft.nl/joas/article/view/7264
+
 ## Python Notebooks and Scripts
 
 - `plot.ipynb`: This Jupyter notebook contains the code to replicate the figures presented in the paper.
@@ -17,3 +19,14 @@ This repository accompanies the paper "Fast Contrail Estimation with OpenSky Dat
 ## Installation Note
 
 To reproduce the results presented, it is necessary to install the `fastmeteo` Python library. Installation instructions and additional information are available at: https://github.com/junzis/fastmeteo
+
+You will also need `traffic` library for trajectory visualization. More details at: https://traffic-viz.github.io/
+
+Sample installation:
+
+```
+mamba create -n fastcontrail python=3.11 -c conda-forge
+mamba activate fastcontrail
+mamba install traffic
+pip install git+https://github.com/junzis/fastmeteo
+```

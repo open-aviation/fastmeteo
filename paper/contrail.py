@@ -18,19 +18,29 @@ propulsion_efficiency = 0.4  # variable
 
 
 def saturation_pressure_over_water(temperature):
-    return pressure_steam * 10 ** (
-        -7.90298 * (temperature_steam / temperature - 1)
-        + 5.02808 * np.log10(temperature_steam / temperature)
-        - 1.3816e-7 * (10 ** (11.344 * (1 - temperature / temperature_steam)) - 1)
-        + 8.1328e-3 * (10 ** (-3.49149 * (temperature_steam / temperature - 1)) - 1)
+    # Murphy and Koop 2005
+    return np.exp(
+        54.842763
+        - 6763.22 / temperature
+        - 4.210 * np.log(temperature)
+        + 0.000367 * temperature
+        + np.tanh(0.0415 * (temperature - 218.8))
+        * (
+            53.878
+            - 1331.22 / temperature
+            - 9.44523 * np.log(temperature)
+            + 0.014025 * temperature
+        )
     )
 
 
 def saturation_pressure_over_ice(temperature):
-    return pressure_ice_point * 10 ** (
-        -9.09718 * (temperature_ice_point / temperature - 1)
-        - 3.56654 * np.log10(temperature_ice_point / temperature)
-        + 0.876793 * (1 - temperature / temperature_ice_point)
+    # Murphy and Koop 2005
+    return np.exp(
+        9.550426
+        - 5723.265 / temperature
+        + 3.53068 * np.log(temperature)
+        - 0.00728332 * temperature
     )
 
 
