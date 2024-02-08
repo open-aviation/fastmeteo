@@ -1,23 +1,25 @@
-# %%
 import numpy as np
 import pandas as pd
 import xarray as xr
+
 from . import aero
 
 
 class Grid:
-    def __init__(self, local_store: str = None) -> None:
-        self.remote = None
-        self.local = None
-
-        self.local_store = local_store
-
-        self.features = [
+    def __init__(
+        self,
+        local_store: str = None,
+        features: list = [
             "u_component_of_wind",
             "v_component_of_wind",
             "temperature",
             "specific_humidity",
-        ]
+        ],
+    ) -> None:
+        self.remote = None
+        self.local = None
+        self.local_store = local_store
+        self.features = features
 
     def set_local_path(self, local_store: str) -> None:
         self.local_store = local_store
@@ -34,15 +36,8 @@ class Grid:
         if self.remote is None:
             self.set_remote()
 
-        features = [
-            "u_component_of_wind",
-            "v_component_of_wind",
-            "temperature",
-            "specific_humidity",
-        ]
-
         selected = self.remote.sel(time=slice(hour, hour), level=slice(100, 700))[
-            features
+            self.features
         ]
 
         return selected
@@ -72,7 +67,10 @@ class Grid:
                 )
             else:
                 selected.to_zarr(
-                    self.local_store, mode="a", append_dim="time", consolidated=True
+                    self.local_store,
+                    mode="a",
+                    append_dim="time",
+                    consolidated=True,
                 )
 
         # close to ensure the write is complete
@@ -80,16 +78,13 @@ class Grid:
 
     def interpolate(self, flight: pd.DataFrame) -> pd.DataFrame:
         times = pd.to_datetime(flight.timestamp)
-
         flight = flight.reset_index(drop=True).assign(
             longitude_360=lambda d: d.longitude % 360
         )
-
         start = times.min()
         stop = times.max()
 
         self.sync_local(start, stop)
-
         self.local = xr.open_zarr(self.local_store, consolidated=True)
 
         era5_cropped = self.local.sel(
@@ -109,7 +104,7 @@ class Grid:
             return flight
 
         coords = {
-            "time": (("points",), flight.timestamp.to_numpy(dtype="datetime64[ns]")),
+            "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
             "latitude": (("points",), flight.latitude.values),
             "longitude": (("points",), flight.longitude_360.values),
             "level": (
