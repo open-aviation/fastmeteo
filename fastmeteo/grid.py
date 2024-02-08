@@ -46,6 +46,14 @@ class Grid:
         # open local zarr storage, create if not exist
         try:
             self.local = xr.open_zarr(self.local_store, consolidated=True)
+            # if feature is missing, raise an error
+            missing_features = [
+                feature
+                for feature in self.features
+                if feature not in self.local.data_vars
+            ]
+            if missing_features:
+                raise KeyError
         except KeyError:
             print(f"init local zarr from google arco era5, hour: {start.floor('1h')}")
             selected = self.select_remote_hour(start.round("1h").to_datetime64())
