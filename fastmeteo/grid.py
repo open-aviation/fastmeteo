@@ -52,7 +52,12 @@ class Grid:
                 for feature in self.features
                 if feature not in self.local.data_vars
             ]
-            if missing_features:
+            local_start = self.local.time.min().values
+            local_stop = self.local.time.max().values
+            time_range_incomplete = (
+                np.datetime64(local_start) > start or np.datetime64(local_stop) < stop
+            )
+            if missing_features or time_range_incomplete:
                 raise KeyError
         except KeyError:
             print(f"init local zarr from google arco era5, hour: {start.floor('1h')}")
