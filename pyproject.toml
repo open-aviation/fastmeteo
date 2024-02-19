@@ -22,7 +22,7 @@ include = ["LICENSE"]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-fastapi = "^0.104.1"
+fastapi = "^0.109.2"
 uvicorn = "^0.24.0.post1"
 requests = "^2.31.0"
 numpy = "^1.26.2"
