@@ -45,10 +45,18 @@ flight = pd.DataFrame(
     }
 )
 
-# define the location for local store
-fmg = Grid(local_store="/tmp/era5-zarr")
+# Define the location for the local store and specify the meteorological features you're interested in
+features = [
+    "u_component_of_wind",
+    "v_component_of_wind",
+    "temperature",
+    "specific_humidity",
+    # You can add or remove features as needed
+]
+# If `features` is not specified in Grid, default features will be used.
+fmg = Grid(local_store="/tmp/era5-zarr", features=features)
 
-# obtain weather information
+# Obtain weather information. 
 flight_new = fmg.interpolate(flight)
 
 ```
