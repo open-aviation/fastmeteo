@@ -91,6 +91,8 @@ class Grid:
 
     def interpolate(self, flight: pd.DataFrame) -> pd.DataFrame:
         times = pd.to_datetime(flight.timestamp)
+        index = flight.index
+
         flight = flight.reset_index(drop=True).assign(
             longitude_360=lambda d: d.longitude % 360
         )
@@ -132,7 +134,10 @@ class Grid:
             ds.coords, method="linear", assume_sorted=False
         ).to_dataframe()[self.features]
 
-        flight_new = pd.concat([flight, new_params], axis=1).drop(
-            columns="longitude_360"
+        flight_new = (
+            pd.concat([flight, new_params], axis=1)
+            .drop(columns="longitude_360")
+            .set_index(index)
         )
+
         return flight_new
