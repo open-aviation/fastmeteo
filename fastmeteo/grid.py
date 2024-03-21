@@ -3,7 +3,7 @@ import pandas as pd
 import xarray as xr
 
 from . import aero
-
+arco_era5_url = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3/"
 
 class Grid:
     def __init__(
@@ -27,7 +27,7 @@ class Grid:
     def set_remote(self) -> None:
         # remote google era5 zarr cloud storage
         self.remote = xr.open_zarr(
-            "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3/",
+            arco_era5_url,
             chunks={"time": 48},
             consolidated=True,
         )
