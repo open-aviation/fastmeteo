@@ -2,6 +2,33 @@
 
 A super-fast Python package to obtain meteorological parameters for your flight trajectories.
 
+`fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data [1] from
+[Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5),
+which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form) [2].
+
+Copernicus ERA5 data span from 1940 to present.
+**Beware** that Google's ARCO ERA5 lacks more recent months; on 21st Mar 2024 it **covers till 2023-10-31**.
+
+## References
+```
+[1] Carver, Robert W, and Merose, Alex. (2023):
+ARCO-ERA5: An Analysis-Ready Cloud-Optimized Reanalysis Dataset.
+22nd Conf. on AI for Env. Science, Denver, CO, Amer. Meteo. Soc, 4A.1,
+https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842
+
+[2] Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., 
+Muñoz‐Sabater, J., Nicolas, J., Peubey, C., Radu, R., Schepers, D., 
+Simmons, A., Soci, C., Abdalla, S., Abellan, X., Balsamo, G., 
+Bechtold, P., Biavati, G., Bidlot, J., Bonavita, M., De Chiara, G., 
+Dahlgren, P., Dee, D., Diamantakis, M., Dragani, R., Flemming, J., 
+Forbes, R., Fuentes, M., Geer, A., Haimberger, L., Healy, S., 
+Hogan, R.J., Hólm, E., Janisková, M., Keeley, S., Laloyaux, P., 
+Lopez, P., Lupu, C., Radnoti, G., de Rosnay, P., Rozum, I., Vamborg, F.,
+Villaume, S., Thépaut, J-N. (2017): Complete ERA5: Fifth generation of 
+ECMWF atmospheric reanalyses of the global climate. Copernicus Climate 
+Change Service (C3S) Data Store (CDS). (Accessed on 21-03-2024)
+```
+
 ## Install
 
 ### stable version
