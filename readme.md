@@ -45,27 +45,17 @@ flight = pd.DataFrame(
     }
 )
 
-# Define the location for the local store and specify the meteorological features you're interested in
-features = [
-    "u_component_of_wind",
-    "v_component_of_wind",
-    "temperature",
-    "specific_humidity",
-    # You can add or remove features as needed
-]
-# If `features` is not specified in Grid, default features will be used.
-fmg = Grid(local_store="/tmp/era5-zarr", features=features)
+fmg = Grid(local_store="/tmp/era5-zarr")
 
-# Obtain weather information. 
+# Obtain weather information.
 flight_new = fmg.interpolate(flight)
-
 ```
 
 ### Server-client mode
 
 When running the tool in a server-client mode. The following script can be used to start a FastAPI service on the server. It handles the flight date request and obtains Google ARCO data if the partition is not on the server. After that, it will perform the interpolation of weather data and return the final data to the client.
 
-```
+```bash
 fastmeteo-serve --local-store /tmp/era5-zarr
 ```
 
@@ -89,4 +79,35 @@ client = Client()
 
 # send the flight and receive the new DataFrame
 flight_new = client.submit_flight(flight)
+```
+
+### Feature list
+
+If you want more or different meteorological features than wind, temperature and humidity, specify the desired feature list as follows:
+
+```python
+features = [
+    "u_component_of_wind",
+    "v_component_of_wind",
+    "temperature",
+    "specific_humidity",
+    "convective_available_potential_energy", # additional new feature
+]
+
+fmg = Grid(local_store="/tmp/era5-zarr", features=features)
+
+flight_new = fmg.interpolate(flight)
+```
+
+All available parameters can be found at: https://codes.ecmwf.int/grib/param-db/
+
+You should use feature names in lower case with underscores for the feature list in `fastmeteo`.
+
+### Pressure levels
+
+Features for the following pressure levels (hPa), out of all 37 levels, are extracted by `fastmeteo`:
+
+```
+100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
+500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
 ```
