@@ -4,17 +4,26 @@ import xarray as xr
 
 from . import aero
 
+# fmt:off
+LEVELS = [
+    100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
+    500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
+]
+# fmt:on
+
+DEFAULT_FEATURES = [
+    "u_component_of_wind",
+    "v_component_of_wind",
+    "temperature",
+    "specific_humidity",
+]
+
 
 class Grid:
     def __init__(
         self,
         local_store: str = None,
-        features: list = [
-            "u_component_of_wind",
-            "v_component_of_wind",
-            "temperature",
-            "specific_humidity",
-        ],
+        features: list = DEFAULT_FEATURES,
     ) -> None:
         self.remote = None
         self.local = None
@@ -36,9 +45,7 @@ class Grid:
         if self.remote is None:
             self.set_remote()
 
-        selected = self.remote.sel(time=slice(hour, hour), level=slice(100, 700))[
-            self.features
-        ]
+        selected = self.remote.sel(time=slice(hour, hour), level=LEVELS)[self.features]
 
         return selected
 
@@ -90,7 +97,7 @@ class Grid:
         self.local.close()
 
     def interpolate(self, flight: pd.DataFrame) -> pd.DataFrame:
-        times = pd.to_datetime(flight.timestamp)
+        times = pd.to_datetime(flight.timestamp).dt.tz_localize(None)
         index = flight.index
 
         flight = flight.reset_index(drop=True).assign(
