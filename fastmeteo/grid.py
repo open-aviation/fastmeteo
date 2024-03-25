@@ -5,7 +5,7 @@ import xarray as xr
 from . import aero
 
 # fmt:off
-LEVELS = [
+DEFAULT_LEVELS = [
     100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
     500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
 ]
@@ -24,11 +24,13 @@ class Grid:
         self,
         local_store: str = None,
         features: list = DEFAULT_FEATURES,
+        levels: list = DEFAULT_LEVELS,
     ) -> None:
         self.remote = None
         self.local = None
         self.local_store = local_store
         self.features = features
+        self.levels = levels
 
     def set_local_path(self, local_store: str) -> None:
         self.local_store = local_store
@@ -45,7 +47,9 @@ class Grid:
         if self.remote is None:
             self.set_remote()
 
-        selected = self.remote.sel(time=slice(hour, hour), level=LEVELS)[self.features]
+        selected = self.remote.sel(time=slice(hour, hour), level=self.levels)[
+            self.features
+        ]
 
         return selected
 
