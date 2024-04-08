@@ -12,5 +12,5 @@ jobs:
       - name: Build and publish to pypi
         uses: JRubics/poetry-publish@v2.0
         with:
-          poetry_version: "1.8.2"
+          poetry_version: "==1.8.2"
           pypi_token: ${{ secrets.PYPI_API_TOKEN_FASTMETEO }}
