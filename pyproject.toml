@@ -37,6 +37,7 @@ scipy = "^1.12"
 
 [tool.poetry.scripts]
 fastmeteo-serve = "fastmeteo.server:main"
+fastmeteo-sync = "fastmeteo.sync:main"
 
 [tool.black]
 target_version = ['py38', 'py39', 'py310', 'py311']

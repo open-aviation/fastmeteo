@@ -1,20 +1,18 @@
 # Fast Meteo
 
-A fast Python package to obtain meteorological parameters for your flight trajectories.
-
+A super-fast Python package to obtain meteorological parameters for your flight trajectories.
 
 ## Checklist
 
 Here are a few things you should know first:
 
-- Synchronization of the data from the Google ARCO ERA5 store can be slow, as each hour of data is about 250MB.
+- Synchronization of the data from the Google ARCO ERA5 store can be a little slow, as each hour of data is about 250MB.
 
-- You should also have a good amount of computer RAM to sync the Zarr Store. I recommend having at least **32 GB of RAM**.
-
-- Once the data is available locally, the code is super-fast, and you don't need much RAM to run it.
+- Once the data is available locally, the code is blazing fast.
 
 - To share access for your group, a good practice is to set up fastmeteo on a server and use it in Server-Client mode.
 
+- You can pre-sync the data using `fastmeteo-sync` command
 
 ## Install
 
@@ -93,6 +91,16 @@ client = Client()
 # send the flight and receive the new DataFrame
 flight_new = client.submit_flight(flight)
 ```
+
+## Pre-sync your data
+
+You can use the following command to pre-sync the data:
+
+```bash
+fastmeteo-sync --local-store /tmp/era5-zarr/ --start 2022-01-01 --stop 2022-02-01
+```
+
+Above example will download the data for January 2022 to your `/tmp/era5-zarr/` folder.
 
 ## Options
 
