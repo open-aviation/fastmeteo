@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+from typing import Any, Dict
+
 import click
+import pandas as pd
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Any, Dict
-import pandas as pd
+
 from . import Grid
 
 fmg = Grid()

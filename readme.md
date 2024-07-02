@@ -7,7 +7,7 @@ A super-fast Python package to obtain meteorological parameters for your flight 
 `fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data [[1]](#1) from [Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5), which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form) [2].
 Copernicus ERA5 data span from 1940 to present.
 
-**Beware** that Google's ARCO ERA5 lacks more recent months; as of 21st Mar 2024 it **covers till 2023-10-31**.
+Beware that Google's ARCO ERA5 may not include more recent months.
 
 You can discover the time interval covered as follows:
 
@@ -23,25 +23,37 @@ dd = xr.open_zarr(
 dd.coords
 ```
 
+## Checklist
+
+Here are a few things you should know first:
+
+- Synchronization of the data from the Google ARCO ERA5 store can be a little slow, as each hour of data is about 250MB.
+
+- Once the data is available locally, the code is blazing fast.
+
+- To share access for your group, a good practice is to set up fastmeteo on a server and use it in Server-Client mode.
+
+- You can pre-sync the data using `fastmeteo-sync` command
+
+
 ## Install
 
 ### stable version
 
 ```
 pip install fastmeteo
-
 ```
 
 ### development version
 
 ```
-pip install git+https://github.com/junzis/fastmeteo
+pip install git+https://github.com/open-aviation/fastmeteo
 ```
 
 or, if you prefer `poetry`:
 
 ```
-git clone https://github.com/junzis/fastmeteo
+git clone https://github.com/open-aviation/fastmeteo
 cd fastmeteo
 poetry install
 ```
@@ -66,27 +78,17 @@ flight = pd.DataFrame(
     }
 )
 
-# Define the location for the local store and specify the meteorological features you're interested in
-features = [
-    "u_component_of_wind",
-    "v_component_of_wind",
-    "temperature",
-    "specific_humidity",
-    # You can add or remove features as needed
-]
-# If `features` is not specified in Grid, default features will be used.
-fmg = Grid(local_store="/tmp/era5-zarr", features=features)
+fmg = Grid(local_store="/tmp/era5-zarr")
 
-# Obtain weather information. 
+# Obtain weather information.
 flight_new = fmg.interpolate(flight)
-
 ```
 
 ### Server-client mode
 
 When running the tool in a server-client mode. The following script can be used to start a FastAPI service on the server. It handles the flight date request and obtains Google ARCO data if the partition is not on the server. After that, it will perform the interpolation of weather data and return the final data to the client.
 
-```
+```bash
 fastmeteo-serve --local-store /tmp/era5-zarr
 ```
 
@@ -112,23 +114,52 @@ client = Client()
 flight_new = client.submit_flight(flight)
 ```
 
+## Pre-sync your data
 
-## References
+You can use the following command to pre-sync the data:
 
-<a id="1">[1]</a> Carver, Robert W, and Merose, Alex. (2023):
-ARCO-ERA5: An Analysis-Ready Cloud-Optimized Reanalysis Dataset.
-22nd Conf. on AI for Env. Science, Denver, CO, Amer. Meteo. Soc, 4A.1,
-https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842
+```bash
+fastmeteo-sync --local-store /tmp/era5-zarr/ --start 2022-01-01 --stop 2022-02-01
+```
 
-<a id="2">[2]</a> Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., 
-Muñoz‐Sabater, J., Nicolas, J., Peubey, C., Radu, R., Schepers, D., 
-Simmons, A., Soci, C., Abdalla, S., Abellan, X., Balsamo, G., 
-Bechtold, P., Biavati, G., Bidlot, J., Bonavita, M., De Chiara, G., 
-Dahlgren, P., Dee, D., Diamantakis, M., Dragani, R., Flemming, J., 
-Forbes, R., Fuentes, M., Geer, A., Haimberger, L., Healy, S., 
-Hogan, R.J., Hólm, E., Janisková, M., Keeley, S., Laloyaux, P., 
-Lopez, P., Lupu, C., Radnoti, G., de Rosnay, P., Rozum, I., Vamborg, F.,
-Villaume, S., Thépaut, J-N. (2017): Complete ERA5: Fifth generation of 
-ECMWF atmospheric reanalyses of the global climate. Copernicus Climate 
-Change Service (C3S) Data Store (CDS). (Accessed on 21-03-2024)
+Above example will download the data for January 2022 to your `/tmp/era5-zarr/` folder.
+
+## Options
+
+### Meteorological features
+
+If you want more or different meteorological features than wind, temperature and humidity, specify the desired feature list as follows:
+
+```python
+features = [
+    "u_component_of_wind",
+    "v_component_of_wind",
+    "convective_available_potential_energy",
+]
+
+fmg = Grid(local_store="/tmp/era5-zarr", features=features)
+
+flight_new = fmg.interpolate(flight)
+```
+
+All available parameters can be found at: https://codes.ecmwf.int/grib/param-db/
+
+You should use feature names in **lower case** with **underscores** for the list of features in `fastmeteo`.
+
+### Pressure levels
+
+By default, `fastmeteo` extracts features for the following pressure levels (hPa), out of all available levels:
+
+```
+100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
+500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
+```
+
+You can also customize the desired levels (sorted), for example, as follows:
+
+```python
+levels = [500, 600, 700, 800, 900, 1000]
+fmg = Grid(local_store="/tmp/era5-zarr", levels=levels)
+
+flight_new = fmg.interpolate(flight)
 ```
