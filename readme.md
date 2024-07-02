@@ -4,7 +4,7 @@ A super-fast Python package to obtain meteorological parameters for your flight 
 
 ## Data 
 
-`fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data [[1]](#1) from [Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5), which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form) [2].
+`fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data from [Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5), which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form).
 Copernicus ERA5 data span from 1940 to present.
 
 Beware that Google's ARCO ERA5 may not include more recent months.
