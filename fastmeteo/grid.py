@@ -143,7 +143,10 @@ class Grid:
         ds = xr.Dataset(coords=coords)
 
         new_params = era5_cropped.interp(
-            ds.coords, method="linear", assume_sorted=False
+            ds.coords,
+            method="linear",
+            assume_sorted=False,
+            kwargs={"fill_value": None},
         ).to_dataframe()[self.features]
 
         flight_new = (

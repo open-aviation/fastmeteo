@@ -2,9 +2,10 @@
 
 A super-fast Python package to obtain meteorological parameters for your flight trajectories.
 
-## Data 
+## Data
 
-`fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data from [Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5), which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form).
+`fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data from [Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5),
+which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels).
 Copernicus ERA5 data span from 1940 to present.
 
 Beware that Google's ARCO ERA5 may not include more recent months.
@@ -15,11 +16,7 @@ You can discover the time interval covered as follows:
 import xarray as xr
 from fastmeteo.grid import arco_era5_url
 
-dd = xr.open_zarr(
-    arco_era5_url,
-    chunks={"time": 48},
-    consolidated=True,
-    )
+dd = xr.open_zarr(arco_era5_url, chunks={"time": 48}, consolidated=True)
 dd.coords
 ```
 
@@ -34,7 +31,6 @@ Here are a few things you should know first:
 - To share access for your group, a good practice is to set up fastmeteo on a server and use it in Server-Client mode.
 
 - You can pre-sync the data using `fastmeteo-sync` command
-
 
 ## Install
 
