@@ -3,9 +3,7 @@ requires-python = ">=3.9"
 resolution-markers = [
     "python_full_version < '3.11'",
     "python_full_version == '3.11.*'",
-    "python_full_version < '3.11'",
-    "python_full_version == '3.11.*'",
-    "python_full_version == '3.12.*'",
+    "python_full_version < '3.13'",
     "python_full_version >= '3.13'",
 ]
 
@@ -530,7 +528,7 @@ wheels = [
 
 [[package]]
 name = "fastmeteo"
-version = "0.2.1"
+version = "0.2.3"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -568,7 +566,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.13.1" },
     { name = "uvicorn", specifier = ">=0.34.0" },
     { name = "xarray", specifier = ">=2024.7.0" },
-    { name = "zarr", specifier = ">=2.18.2" },
+    { name = "zarr", specifier = ">=2.18.2,<3.0.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -858,7 +856,7 @@ name = "importlib-metadata"
 version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12'" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cd/12/33e59336dca5be0c398a7482335911a33aa0e20776128f038019f1a95f1b/importlib_metadata-8.5.0.tar.gz", hash = "sha256:71522656f0abace1d072b9e5481a48f07c138e00f079c38c8f883823f9c26bd7", size = 55304 }
 wheels = [

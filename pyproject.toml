@@ -1,6 +1,6 @@
 [project]
 name = "fastmeteo"
-version = "0.2.2"
+version = "0.2.3"
 description = "Fast interpolation for ERA5 data with Zarr"
 authors = [{ name = "Junzi Sun", email = "j.sun-1@tudelft.nl" }]
 license = { text = "GNU LGPL v3" }
