@@ -4,6 +4,7 @@ import xarray as xr
 from . import aero
 
 arco_era5_url = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3/"
+# arco_era5_url = "gs://gcp-public-data-arco-era5/ar/model-level-1h-0p25deg.zarr-v1/"
 
 # fmt:off
 DEFAULT_LEVELS = [
@@ -18,6 +19,7 @@ DEFAULT_FEATURES = [
     "temperature",
     "specific_humidity",
 ]
+
 
 class Grid:
     def __init__(
@@ -35,12 +37,12 @@ class Grid:
     def set_local_path(self, local_store: str) -> None:
         self.local_store = local_store
 
-    def set_remote(self) -> None:
+    def set_remote(self, url=arco_era5_url) -> None:
         # remote google era5 zarr cloud storage
         self.remote = xr.open_zarr(
-            arco_era5_url,
-            chunks={"time": 48},
-            consolidated=True,
+            url,
+            chunks=None,
+            storage_options=dict(token="anon"),
         )
 
     def select_remote_hour(self, hour: pd.DatetimeIndex) -> xr.Dataset:
