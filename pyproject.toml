@@ -25,7 +25,7 @@ dependencies = [
     "scipy>=1.13.1",
     "uvicorn>=0.34.0",
     "xarray>=2024.7.0",
-    "zarr>=2.18.2",
+    "zarr (>=2.18.2,<3.0.0)",
 ]
 
 
