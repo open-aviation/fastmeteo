@@ -1,47 +1,62 @@
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry]
+[project]
 name = "fastmeteo"
+version = "0.2.2"
 description = "Fast interpolation for ERA5 data with Zarr"
-version = "0.2.1"
-authors = ["Junzi Sun <j.sun-1@tudelft.nl>"]
-license = "GNU Lesser General Public License v3 (LGPLv3)"
+authors = [{ name = "Junzi Sun", email = "j.sun-1@tudelft.nl" }]
+license = { text = "GNU LGPL v3" }
 readme = "readme.md"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3",
 ]
-packages = [{ include = "fastmeteo", from = "." }]
-include = ["LICENSE"]
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.1.8",
+    "dask>=2024.8.0",
+    "fastapi>=0.115.6",
+    "fsspec>=2024.12.0",
+    "gcsfs>=2024.12.0",
+    "numpy>=2.0.2",
+    "pandas>=2.2.3",
+    "requests>=2.32.3",
+    "scipy>=1.13.1",
+    "uvicorn>=0.34.0",
+    "xarray>=2024.7.0",
+    "zarr>=2.18.2",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-fastapi = "^0.110"
-uvicorn = "^0.29"
-requests = "^2.31"
-numpy = "^1.26"
-click = "^8.1"
-pandas = "^2.1.3"
-zarr = "^2.17"
-xarray = "^2024"
-fsspec = "^2024"
-dask = "^2024"
-gcsfs = "^2024"
-scipy = "^1.12"
 
-[tool.poetry.scripts]
-fastmeteo-serve = "fastmeteo.server:main"
-fastmeteo-sync = "fastmeteo.sync:main"
+[project.urls]
+homepage = "https://github.com/open-aviation/fastmeteo"
+repository = "https://github.com/open-aviation/fastmeteo"
+issues = "https://github.com/open-aviation/fastmeteo/issues"
 
-[tool.black]
-target_version = ['py38', 'py39', 'py310', 'py311']
-include = '\.pyi?$'
+[tool.uv]
+dev-dependencies = [
+    "flake8>=5.0.0",
+    "black>=22.12.0",
+    "isort>=5.11.4",
+    "ipykernel>=6.29.5",
+]
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "NPY", # numpy
+    # "PD",  # pandas
+    "DTZ", # flake8-datetimez
+    "RUF",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
