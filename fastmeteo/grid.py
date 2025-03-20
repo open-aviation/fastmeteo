@@ -1,15 +1,33 @@
+import os
+
+import numpy as np
 import pandas as pd
 import xarray as xr
 
 from . import aero
 
-arco_era5_url = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3/"
-# arco_era5_url = "gs://gcp-public-data-arco-era5/ar/model-level-1h-0p25deg.zarr-v1/"
+curr_path = os.path.dirname(os.path.realpath(__file__))
+datadir = os.path.join(curr_path, "data/")
+
+
+arco_era5_url_level_37 = (
+    "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3/"
+)
+arco_era5_url_level_137 = (
+    "gs://gcp-public-data-arco-era5/ar/model-level-1h-0p25deg.zarr-v1/"
+)
 
 # fmt:off
-DEFAULT_LEVELS = [
+DEFAULT_LEVELS_37 = [
     100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
     500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
+]
+
+DEFAULT_LEVELS_137 = [
+    67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,
+    81,  82,  83,  84,  85,  86,  88,  89,  90,  91,  92,  93,  94,  95,
+    96,  97,  98,  99,  100, 101, 103, 104, 105, 107, 108, 110, 112, 114,
+    116, 119, 122, 128, 132, 137
 ]
 # fmt:on
 
@@ -25,19 +43,31 @@ class Grid:
     def __init__(
         self,
         local_store: str = None,
+        model_levels: int = 37,
         features: list = DEFAULT_FEATURES,
-        levels: list = DEFAULT_LEVELS,
     ) -> None:
+        assert model_levels in [37, 137], "model_level must be 37 or 137"
+
         self.remote = None
         self.local = None
         self.local_store = local_store
         self.features = features
-        self.levels = levels
+        self.model_levels = model_levels
+
+        if model_levels == 37:
+            self.set_remote(arco_era5_url_level_37)
+            self.levels = DEFAULT_LEVELS_37
+        elif model_levels == 137:
+            self.set_remote(arco_era5_url_level_137)
+            self.levels = DEFAULT_LEVELS_137
+            self.level_data = pd.read_csv(f"{datadir}/level_137.csv").sort_values(
+                "altitude"
+            )
 
     def set_local_path(self, local_store: str) -> None:
         self.local_store = local_store
 
-    def set_remote(self, url=arco_era5_url) -> None:
+    def set_remote(self, url) -> None:
         # remote google era5 zarr cloud storage
         self.remote = xr.open_zarr(
             url,
@@ -52,7 +82,10 @@ class Grid:
         selected = self.remote.sel(time=slice(hour, hour))[self.features].compute()
 
         # must process level selection locally
-        selected = selected.sel(level=DEFAULT_LEVELS)
+        if self.model_levels == 37:
+            selected = selected.sel(level=self.levels)
+        elif self.model_levels == 137:
+            selected = selected.sel(hybrid=self.levels)
 
         return selected
 
@@ -132,15 +165,28 @@ class Grid:
             RuntimeWarning(f"data from {start} to {stop} is not available.")
             return flight
 
-        coords = {
-            "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
-            "latitude": (("points",), flight.latitude.values),
-            "longitude": (("points",), flight.longitude_360.values),
-            "level": (
-                ("points",),
-                aero.pressure(flight.altitude * aero.ft) / 100,
-            ),
-        }
+        if self.model_levels == 37:
+            coords = {
+                "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
+                "latitude": (("points",), flight.latitude.values),
+                "longitude": (("points",), flight.longitude_360.values),
+                "level": (
+                    ("points",),
+                    aero.pressure(flight.altitude * aero.ft) / 100,
+                ),
+            }
+        elif self.model_levels == 137:
+            coords = {
+                "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
+                "latitude": (("points",), flight.latitude.values),
+                "longitude": (("points",), flight.longitude_360.values),
+                "hybrid": (
+                    ("points",),
+                    np.interp(
+                        flight.altitude, self.level_data.altitude, self.level_data.level
+                    ),
+                ),
+            }
 
         ds = xr.Dataset(coords=coords)
 
