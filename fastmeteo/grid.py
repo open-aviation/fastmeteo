@@ -40,16 +40,17 @@ DEFAULT_FEATURES = [
 
 
 class Grid:
+    remote: xr.Dataset
+    local: xr.Dataset
+
     def __init__(
         self,
-        local_store: str = None,
+        local_store: None | str = None,
         model_levels: int = 37,
         features: list = DEFAULT_FEATURES,
     ) -> None:
         assert model_levels in [37, 137], "model_level must be 37 or 137"
 
-        self.remote = None
-        self.local = None
         self.local_store = local_store
         self.features = features
         self.model_levels = model_levels
@@ -72,13 +73,11 @@ class Grid:
         self.remote = xr.open_zarr(
             url,
             chunks=None,
-            storage_options=dict(token="anon"),
+            # https://gcsfs.readthedocs.io/en/latest/#proxy
+            storage_options=dict(token="anon", session_kwargs={"trust_env": True}),
         )
 
     def select_remote_hour(self, hour: pd.DatetimeIndex) -> xr.Dataset:
-        if self.remote is None:
-            self.set_remote()
-
         selected = self.remote.sel(time=slice(hour, hour))[self.features].compute()
 
         # must process level selection locally
@@ -89,7 +88,9 @@ class Grid:
 
         return selected
 
-    def sync_local(self, start: str or pd.DatetimeIndex, stop: str or pd.DatetimeIndex):
+    def sync_local(
+        self, start: str | pd.DatetimeIndex, stop: str | pd.DatetimeIndex
+    ) -> None:
         # sync local zarr storage, create if not exist
 
         start = pd.to_datetime(start)

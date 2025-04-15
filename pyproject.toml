@@ -12,19 +12,19 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
     "click>=8.1.8",
-    "dask>=2024.8.0",
-    "fastapi>=0.115.6",
-    "fsspec>=2024.12.0",
-    "gcsfs>=2024.12.0",
-    "numpy>=2.0.2",
+    "dask>=2025.3.0",
+    "fastapi>=0.115.12",
+    "fsspec>=2025.3.2",
+    "gcsfs>=2025.3.2",
+    "numpy>=2.2.4",
     "pandas>=2.2.3",
     "requests>=2.32.3",
-    "scipy>=1.13.1",
-    "uvicorn>=0.34.0",
-    "xarray>=2024.7.0",
+    "scipy>=1.15.2",
+    "uvicorn>=0.34.1",
+    "xarray>=2025.3.1",
     "zarr (>=2.18.2,<3.0.0)",
 ]
 
@@ -35,12 +35,7 @@ repository = "https://github.com/open-aviation/fastmeteo"
 issues = "https://github.com/open-aviation/fastmeteo/issues"
 
 [tool.uv]
-dev-dependencies = [
-    "flake8>=5.0.0",
-    "black>=22.12.0",
-    "isort>=5.11.4",
-    "ipykernel>=6.29.5",
-]
+dev-dependencies = ["ipykernel>=6.29.5", "ruff>=0.11.5", "mypy>=1.15.0"]
 
 [tool.ruff]
 target-version = "py311"
