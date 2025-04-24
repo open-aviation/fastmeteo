@@ -2,7 +2,10 @@
 name = "fastmeteo"
 version = "1.0.0"
 description = "Fast interpolation for ERA5 data with Zarr"
-authors = [{ name = "Junzi Sun", email = "j.sun-1@tudelft.nl" }]
+authors = [
+    { name = "Junzi Sun", email = "j.sun-1@tudelft.nl" }, 
+    { name = "Xavier Olive", email = "git@xoolive.org" },
+]
 license = { text = "GNU LGPL v3" }
 readme = "readme.md"
 classifiers = [
@@ -14,15 +17,18 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "cfgrib>=0.9.15.0",
     "click>=8.1.8",
     "dask>=2025.3.0",
     "fastapi>=0.115.12",
     "fsspec>=2025.3.2",
     "gcsfs>=2025.3.2",
+    "httpx>=0.28.1",
+    "netcdf4>=1.7.2",
     "numpy>=2.2.4",
     "pandas>=2.2.3",
-    "requests>=2.32.3",
     "scipy>=1.15.2",
+    "tqdm>=4.67.1",
     "uvicorn>=0.34.1",
     "xarray>=2025.3.1",
     "zarr (>=2.18.2,<3.0.0)",
@@ -34,8 +40,17 @@ homepage = "https://github.com/open-aviation/fastmeteo"
 repository = "https://github.com/open-aviation/fastmeteo"
 issues = "https://github.com/open-aviation/fastmeteo/issues"
 
+[project.scripts]
+fastmeteo = "fastmeteo.cli.sync:main"
+
+
 [tool.uv]
-dev-dependencies = ["ipykernel>=6.29.5", "ruff>=0.11.5", "mypy>=1.15.0"]
+dev-dependencies = [
+    "ipykernel>=6.29.5",
+    "ruff>=0.11.5",
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+]
 
 [tool.ruff]
 target-version = "py311"
@@ -51,6 +66,18 @@ select = [
     "DTZ", # flake8-datetimez
     "RUF",
 ]
+
+[tool.mypy]
+ignore_missing_imports = true
+no_implicit_optional = true
+strict = true
+check_untyped_defs = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+show_column_numbers = true
+pretty = true
 
 [build-system]
 requires = ["hatchling"]
