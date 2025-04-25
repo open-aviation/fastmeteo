@@ -2,15 +2,16 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import httpx
 import numpy as np
 import pandas as pd
 import xarray as xr
+from impunity import impunity
+from pitot.isa import pressure
 from tqdm.auto import tqdm
 
-from .. import aero
 from ..core.grid import Grid
 
 tempdir = Path(tempfile.gettempdir())
@@ -98,16 +99,15 @@ class Arpege(Grid):
 
         return ds
 
+    @impunity
     def coords(self, flight: pd.DataFrame) -> dict[str, Any]:
         times = pd.to_datetime(flight.timestamp).dt.tz_localize(None)
+        altitude: Annotated[pd.Series, "ft"] = flight.altitude
 
         coords = {
             "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
             "latitude": (("points",), flight.latitude.values),
             "longitude": (("points",), flight.longitude_360.values),
-            "isobaricInhPa": (
-                ("points",),
-                aero.pressure(flight.altitude.values * aero.ft) // 100,  # type: ignore
-            ),
+            "isobaricInhPa": (("points",), pressure(altitude) // 100),
         }
         return coords

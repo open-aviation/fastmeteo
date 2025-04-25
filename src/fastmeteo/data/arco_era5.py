@@ -1,11 +1,12 @@
 import os
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+from impunity import impunity
+from pitot.isa import pressure
 
-from .. import aero
 from ..core.grid import Grid
 
 curr_path = os.path.dirname(os.path.realpath(__file__))
@@ -89,18 +90,17 @@ class ArcoEra5(Grid):
 
         return selected
 
+    @impunity
     def coords(self, flight: pd.DataFrame) -> dict[str, Any]:
         times = pd.to_datetime(flight.timestamp).dt.tz_localize(None)
 
         if self.model_levels == 37:
+            altitude: Annotated[pd.Series, "ft"] = flight.altitude
             coords = {
                 "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
                 "latitude": (("points",), flight.latitude.values),
                 "longitude": (("points",), flight.longitude_360.values),
-                "level": (
-                    ("points",),
-                    aero.pressure(flight.altitude * aero.ft) / 100,  # type: ignore
-                ),
+                "level": (("points",), pressure(altitude) / 100),
             }
         elif self.model_levels == 137:
             coords = {
