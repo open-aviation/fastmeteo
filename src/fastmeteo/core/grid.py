@@ -6,8 +6,21 @@ import xarray as xr
 
 
 class Grid:
+    """
+    Base class for all grid data sources.
+
+    This class provides a common interface for all grid data sources, including
+    methods for selecting remote data, synchronizing local data, and
+    interpolating data to match flight data. The class is designed to be
+    subclassed by specific grid data sources, such as Arpege or Arco-Era5.
+
+    """
+
+    # Data collected remotely
     remote_dataset: xr.Dataset
+    # Local storage path for a copy of the data
     local_store: str
+    # Features we want to keep in the dataset
     features: list[str]
 
     @abstractmethod
@@ -17,6 +30,8 @@ class Grid:
     def coords(self, flight: pd.DataFrame) -> dict[str, Any]: ...
 
     def get_local(self, start: str | pd.DatetimeIndex) -> xr.Dataset:
+        """Get the local dataset, if it exists.
+        If not, create it from the remote source."""
         start = pd.to_datetime(start)
         try:
             local_dataset = xr.open_zarr(self.local_store, consolidated=True)
@@ -29,8 +44,11 @@ class Grid:
         return local_dataset  # type: ignore
 
     def sync_local(
-        self, start: str | pd.DatetimeIndex, stop: str | pd.DatetimeIndex
+        self,
+        start: str | pd.DatetimeIndex,
+        stop: str | pd.DatetimeIndex,
     ) -> xr.Dataset:
+        """Ensure you get the data from the remote source and save it locally."""
         start = pd.to_datetime(start)
         stop = pd.to_datetime(stop)
 
@@ -67,13 +85,12 @@ class Grid:
         local_dataset.close()
         return local_dataset
 
-    def interpolate(self, flight: pd.DataFrame) -> pd.DataFrame:
-        times = pd.to_datetime(flight.timestamp).dt.tz_localize(None)
-        index = flight.index
+    def interpolate(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Interpolate data on a grid."""
+        times = pd.to_datetime(df.timestamp).dt.tz_localize(None)
+        index = df.index
 
-        flight = flight.reset_index(drop=True).assign(
-            longitude_360=lambda d: d.longitude % 360
-        )
+        df = df.reset_index(drop=True).assign(longitude_360=lambda d: d.longitude % 360)
         start = times.min()
         stop = times.max()
 
@@ -85,17 +102,15 @@ class Grid:
                     dtype="datetime64"
                 )
             ),
-            latitude=slice(flight.latitude.max() + 1, flight.latitude.min() - 1),
-            longitude=slice(
-                flight.longitude_360.min() - 1, flight.longitude_360.max() + 1
-            ),
+            latitude=slice(df.latitude.max() + 1, df.latitude.min() - 1),
+            longitude=slice(df.longitude_360.min() - 1, df.longitude_360.max() + 1),
         )
 
         if data_cropped.time.size == 0:
             RuntimeWarning(f"data from {start} to {stop} is not available.")
-            return flight
+            return df
 
-        coords = self.coords(flight)
+        coords = self.coords(df)
         ds = xr.Dataset(coords=coords)
 
         new_params = data_cropped.interp(
@@ -106,7 +121,7 @@ class Grid:
         ).to_dataframe()[self.features]
 
         flight_new = (
-            pd.concat([flight, new_params], axis=1)
+            pd.concat([df, new_params], axis=1)
             .drop(columns="longitude_360")
             .set_index(index)
         )

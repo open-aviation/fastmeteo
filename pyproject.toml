@@ -3,7 +3,7 @@ name = "fastmeteo"
 version = "1.0.0"
 description = "Fast interpolation for ERA5 data with Zarr"
 authors = [
-    { name = "Junzi Sun", email = "j.sun-1@tudelft.nl" }, 
+    { name = "Junzi Sun", email = "j.sun-1@tudelft.nl" },
     { name = "Xavier Olive", email = "git@xoolive.org" },
 ]
 license = { text = "GNU LGPL v3" }
@@ -56,6 +56,7 @@ dev-dependencies = [
 
 [tool.ruff]
 target-version = "py311"
+line-length = 88
 
 [tool.ruff.lint]
 select = [

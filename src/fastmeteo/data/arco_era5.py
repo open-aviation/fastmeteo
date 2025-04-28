@@ -42,7 +42,17 @@ DEFAULT_FEATURES = [
 
 class ArcoEra5(Grid):
     """
-    Class to handle the ARCO ERA5 data.
+    ARCO ERA5 data is made available by the European Centre for Medium-Range
+    Weather Forecasts (ECMWF) and is accessible via Google Cloud Storage. The
+    data is stored in Zarr format, which is a cloud-optimized format for storing
+    large datasets.
+
+    The data is available at a resolution of 0.25 degrees and is updated every
+    hour. The data is available for the entire globe and is available for the
+    years 1979 to present. The data is available in a variety of formats,
+    including NetCDF, GRIB, and Zarr. The data is available for a variety of
+    variables, including temperature, humidity, wind speed, and wind direction.
+
     """
 
     def __init__(
