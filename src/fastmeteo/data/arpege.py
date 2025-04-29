@@ -114,25 +114,19 @@ class Arpege(Grid):
         self.levels = levels or DEFAULT_LEVELS_37
 
     def get_latest_run_time(self, time: np.datetime64) -> datetime:
-        utc_now = pd.to_datetime(time).tz_localize("UTC")
-        candidate = datetime(
-            utc_now.year,
-            utc_now.month,
-            utc_now.day,
-            utc_now.hour,
-            tzinfo=timezone.utc,
-        )
-        run_time = datetime(
-            candidate.year,
-            candidate.month,
-            candidate.day,
-            tzinfo=timezone.utc,
-        )
-        for hour in self.run_date:
-            if candidate.hour >= hour:
-                run_time += timedelta(hours=int(hour))
-                break
+        # TODO
 
+        # The challenge here is to ensure we select a unique and consistent
+        # timestamp for each data point. Multiple files may contain forecasts
+        # for the same timestamp (from different model runs or forecast ranges),
+        # especially when considering different grids and time ranges.
+        #
+        # For the moment, we will consider that we stick to the 0.25 degree grid
+        # with only one file per day (time range 000H024H), and get only one
+        # file per day.
+
+        now = pd.to_datetime(time).tz_localize("UTC")
+        run_time = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
         return run_time
 
     def select_remote(self, hour: pd.DatetimeIndex) -> xr.Dataset:
@@ -165,15 +159,17 @@ class Arpege(Grid):
 
         return ds.sel(isobaricInhPa=self.levels)[self.features].compute()
 
-    @impunity
+    # @impunity
     def coords(self, flight: pd.DataFrame) -> dict[str, Any]:
         times = pd.to_datetime(flight.timestamp).dt.tz_localize(None)
         altitude: Annotated[pd.Series, "ft"] = flight.altitude
+        # hPa: Annotated[Any, "hPa"] = pressure(altitude)
+        hPa: Annotated[Any, "hPa"] = pressure(altitude * 0.3048) / 100
 
         coords = {
             "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
             "latitude": (("points",), flight.latitude.values),
             "longitude": (("points",), flight.longitude_360.values),
-            "isobaricInhPa": (("points",), pressure(altitude) // 100),
+            "isobaricInhPa": (("points",), hPa),
         }
         return coords

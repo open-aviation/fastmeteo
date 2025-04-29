@@ -1,5 +1,5 @@
 import os
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, TypedDict
 
 import numpy as np
 import pandas as pd
@@ -100,31 +100,35 @@ class ArcoEra5(Grid):
 
         return selected
 
-    @impunity
-    def coords(self, flight: pd.DataFrame) -> dict[str, Any]:
-        times = pd.to_datetime(flight.timestamp).dt.tz_localize(None)
+    # @impunity
+    def coords(self, df: pd.DataFrame) -> dict[str, Any]:
+        times = pd.to_datetime(df.timestamp).dt.tz_localize(None)
 
         if self.model_levels == 37:
-            altitude: Annotated[pd.Series, "ft"] = flight.altitude
-            coords = {
+            altitude: Annotated[Any, "ft"] = df.altitude
+            # hPa: Annotated[Any, "hPa"] = pressure(altitude)
+            hPa: Annotated[Any, "hPa"] = pressure(altitude * 0.3048) / 100
+            _coords = {
                 "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
-                "latitude": (("points",), flight.latitude.values),
-                "longitude": (("points",), flight.longitude_360.values),
-                "level": (("points",), pressure(altitude) / 100),
+                "latitude": (("points",), df.latitude.values),
+                "longitude": (("points",), df.longitude_360.values),
+                "level": (("points",), hPa),
             }
         elif self.model_levels == 137:
-            coords = {
+            _coords = {
                 "time": (("points",), times.to_numpy(dtype="datetime64[ns]")),
-                "latitude": (("points",), flight.latitude.values),
-                "longitude": (("points",), flight.longitude_360.values),
+                "latitude": (("points",), df.latitude.values),
+                "longitude": (("points",), df.longitude_360.values),
                 "hybrid": (
                     ("points",),
                     np.interp(
-                        flight.altitude,
+                        df.altitude,
                         self.level_data.altitude,
                         self.level_data.level,
                     ),
                 ),
             }
+        else:
+            raise ValueError("model_levels must be 37 or 137")
 
-        return coords
+        return _coords

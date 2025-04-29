@@ -22,10 +22,10 @@ def test_interpolate() -> None:
 
 
 def test_arpege() -> None:
-    now = pd.Timestamp("now", tz="UTC") - pd.Timedelta(hours=6)
+    now = pd.Timestamp("now", tz="UTC")
     flight = pd.DataFrame(
         {
-            "timestamp": [now, now + pd.Timedelta(seconds=10)],
+            "timestamp": [now, now],
             "icao24": ["abc123", "abc123"],
             "latitude": [40.3, 42.5],
             "longitude": [4.2, 6.6],

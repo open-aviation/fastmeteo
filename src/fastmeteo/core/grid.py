@@ -95,13 +95,10 @@ class Grid:
         stop = times.max()
 
         local_dataset = self.sync_local(start, stop)
+        interval = pd.date_range(start.floor("1h"), stop.ceil("1h"), freq="1h")
 
         data_cropped = local_dataset.sel(
-            time=local_dataset.time.isin(
-                pd.date_range(start.floor("1h"), stop.ceil("1h"), freq="1h").to_numpy(
-                    dtype="datetime64"
-                )
-            ),
+            time=local_dataset.time.isin(interval.to_numpy(dtype="datetime64")),
             latitude=slice(df.latitude.max() + 1, df.latitude.min() - 1),
             longitude=slice(df.longitude_360.min() - 1, df.longitude_360.max() + 1),
         )
