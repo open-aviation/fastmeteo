@@ -1,9 +1,9 @@
 [project]
 name = "fastmeteo"
 version = "1.0.0"
-description = "Fast interpolation for ERA5 data with Zarr"
+description = "A fast Python tool for regridding and interpolating meteorological data"
 authors = [
-    { name = "Junzi Sun", email = "j.sun-1@tudelft.nl" },
+    { name = "Junzi Sun", email = "git@junzis.com" },
     { name = "Xavier Olive", email = "git@xoolive.org" },
 ]
 license = { text = "GNU LGPL v3" }
