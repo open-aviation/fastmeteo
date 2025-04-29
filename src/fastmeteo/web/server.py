@@ -7,9 +7,9 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from . import Grid
+from ..data import ArcoEra5
 
-fmg = Grid()
+fmg = ArcoEra5("/tmp/era5-zarr")
 app = FastAPI()
 
 
@@ -17,17 +17,17 @@ class FlightRequest(BaseModel):
     data: Dict[str, Any]
 
 
-def deserialize(flight_dict: Dict) -> pd.DataFrame:
+def deserialize(flight_dict: dict[str, Any]) -> pd.DataFrame:
     df = pd.DataFrame.from_dict(flight_dict)
     return df
 
 
-def serialize(flight_df: pd.DataFrame) -> dict:
-    return flight_df.to_dict()
+def serialize(flight_df: pd.DataFrame) -> dict[str, Any]:
+    return flight_df.to_dict(orient="list")  # type: ignore
 
 
 @app.post("/submit_flight/", response_model=Dict)
-async def submit_flight(flight_request: FlightRequest):
+async def submit_flight(flight_request: FlightRequest) -> dict[str, Any]:
     flight = deserialize(flight_request.data)
     flight_new = fmg.interpolate(flight)
     return serialize(flight_new)
@@ -36,8 +36,8 @@ async def submit_flight(flight_request: FlightRequest):
 @click.command()
 @click.option("--local-store", required="true", help="local era5 zarr store path")
 @click.option("--port", default=9800, help="listening on port")
-def main(local_store, port):
-    fmg.set_local_path(local_store)
+def main(local_store: str, port: int) -> None:
+    fmg.local_store = local_store
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
