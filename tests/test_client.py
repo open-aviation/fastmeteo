@@ -2,7 +2,7 @@ import pandas as pd
 from fastapi.testclient import TestClient
 
 from fastmeteo import Client
-from fastmeteo.web.server import app
+from fastmeteo.network.server import app
 
 
 def test_client() -> None:

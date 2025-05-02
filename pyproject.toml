@@ -43,7 +43,8 @@ repository = "https://github.com/open-aviation/fastmeteo"
 issues = "https://github.com/open-aviation/fastmeteo/issues"
 
 [project.scripts]
-fastmeteo = "fastmeteo.cli.sync:main"
+fastmeteo-sync = "fastmeteo.cli.sync:main"
+fastmeteo-server = "fastmeteo.network.server:main"
 
 
 [tool.uv]

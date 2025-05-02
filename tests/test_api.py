@@ -1,6 +1,6 @@
 import pandas as pd
 
-from fastmeteo.data import ArcoEra5, Arpege
+from fastmeteo.source import ArcoEra5, Arpege
 
 arco_fmg = ArcoEra5(local_store="/tmp/era5-zarr", model_levels=37)
 arpege_fmg = Arpege(local_store="/tmp/arpege-zarr")

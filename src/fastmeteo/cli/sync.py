@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import click
 
-from ..data import ArcoEra5
+from ..source import ArcoEra5
 
 
 @click.command()

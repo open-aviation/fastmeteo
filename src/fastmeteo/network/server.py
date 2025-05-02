@@ -7,7 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from ..data import ArcoEra5
+from ..source import ArcoEra5
 
 fmg = ArcoEra5("/tmp/era5-zarr")
 app = FastAPI()
