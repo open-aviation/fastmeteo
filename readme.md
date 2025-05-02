@@ -56,14 +56,15 @@ poetry install
 
 ## Usage
 
-### Local mode
+### ARCO ERA5 reanalysis data
 
 You can get the weather information for a given flight or position with the following code. Basic information on time, latitude, longitude, and altitude is needed.
 
 ```python
 
 import pandas as pd
-from fastmeteo import Grid
+
+from fastmeteo.source import ArcoEra5
 
 flight = pd.DataFrame(
     {
@@ -74,25 +75,46 @@ flight = pd.DataFrame(
     }
 )
 
-fmg = Grid(local_store="/tmp/era5-zarr")
-
 # Obtain weather information.
-flight_new = fmg.interpolate(flight)
+arco_grid = ArcoEra5(local_store="/tmp/era5-zarr")
+flight_new = arco_grid.interpolate(flight)
 ```
 
-### Server-client mode
+### ARPEGE weather forecast data
+
+```python
+import pandas as pd
+
+from fastmeteo.source import Arpege
+
+six_hours_later = pd.Timestamp("now", tz="UTC") + pd.Timedelta("6h")
+
+flight = pd.DataFrame(
+    {
+        "timestamp": [six_hours_later, six_hours_later],
+        "latitude": [40.3, 42.5],
+        "longitude": [4.2, 6.6],
+        "altitude": [25_000, 30_000],
+    }
+)
+
+arpege_fmg = Arpege(local_store="/tmp/arpege-zarr")
+flight_new = arpege_fmg.interpolate(flight)
+```
+
+## Server-client mode
 
 When running the tool in a server-client mode. The following script can be used to start a FastAPI service on the server. It handles the flight date request and obtains Google ARCO data if the partition is not on the server. After that, it will perform the interpolation of weather data and return the final data to the client.
 
 ```bash
-fastmeteo-serve --local-store /tmp/era5-zarr
+fastmeteo-server --local-store /tmp/era5-zarr
 ```
 
 At the client side, the following code can be used to submit and get the process flight with meteorology data.
 
 ```python
 import pandas as pd
-from fastmeteo import Client
+from fastmeteo.network import Client
 
 flight = pd.DataFrame(
     {
