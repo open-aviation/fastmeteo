@@ -4,27 +4,18 @@ A super-fast Python package to obtain meteorological parameters for your flight 
 
 ## Data
 
-`fastmeteo` uses Analysis-Ready, Cloud Optimized (ARCO) ERA5 data from [Google's Public datasets](https://cloud.google.com/storage/docs/public-datasets/era5),
-which in turn is derived from [Copernicus ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels).
-Copernicus ERA5 data span from 1940 to present.
+`fastmeteo` make the interpolation of meteorological parameters for your flight trajectories super fast and easy. Currently, it supports the following data sources:
 
-Beware that Google's ARCO ERA5 may not include more recent months.
+- [ARCO ERA5](https://cloud.google.com/storage/docs/public-datasets/era5) reanalysis data from ECMWF and Google (beware this data has delay of months)
+- [ARPEGE](https://www.umr-cnrm.fr/spip.php?article121&lang=en) weather forecast data from Météo-France.
 
-You can discover the time interval covered as follows:
 
-```python
-import xarray as xr
-from fastmeteo.grid import arco_era5_url
-
-dd = xr.open_zarr(arco_era5_url, chunks={"time": 48}, consolidated=True)
-dd.coords
-```
 
 ## Checklist
 
 Here are a few things you should know first:
 
-- Synchronization of the data from the Google ARCO ERA5 store can be a little slow, as each hour of data is about 250MB.
+- Synchronization of the data from the Google ARCO ERA5 store can be a little slow.
 
 - Once the data is available locally, the code is blazing fast.
 
@@ -44,14 +35,6 @@ pip install fastmeteo
 
 ```
 pip install git+https://github.com/open-aviation/fastmeteo
-```
-
-or, if you prefer `poetry`:
-
-```
-git clone https://github.com/open-aviation/fastmeteo
-cd fastmeteo
-poetry install
 ```
 
 ## Usage
@@ -75,7 +58,7 @@ flight = pd.DataFrame(
     }
 )
 
-# Obtain weather information.
+# Obtain ERA5 reanalysis information.
 arco_grid = ArcoEra5(local_store="/tmp/era5-zarr")
 flight_new = arco_grid.interpolate(flight)
 ```
@@ -98,8 +81,9 @@ flight = pd.DataFrame(
     }
 )
 
-arpege_fmg = Arpege(local_store="/tmp/arpege-zarr")
-flight_new = arpege_fmg.interpolate(flight)
+# Obtain Arpege forecast information.
+arpege_grid = Arpege(local_store="/tmp/arpege-zarr")
+flight_new = arpege_grid.interpolate(flight)
 ```
 
 ## Server-client mode
@@ -134,13 +118,13 @@ flight_new = client.submit_flight(flight)
 
 ## Pre-sync your data
 
-You can use the following command to pre-sync the data:
+You can use the following command to pre-sync the data (only available for ARCO ERA5 data):
 
 ```bash
-fastmeteo-sync --local-store /tmp/era5-zarr/ --start 2022-01-01 --stop 2022-02-01
+fastmeteo-sync --local-store /path/to/era5-zarr/ --start 2022-01-01 --stop 2022-02-01
 ```
 
-Above example will download the data for January 2022 to your `/tmp/era5-zarr/` folder.
+Above example will download the data for January 2022 to your `/path/to/era5-zarr/` folder.
 
 ## Options
 
@@ -155,29 +139,47 @@ features = [
     "convective_available_potential_energy",
 ]
 
-fmg = Grid(local_store="/tmp/era5-zarr", features=features)
+era5_grid = ArcoEra5(local_store="/tmp/era5-zarr", features=features)
 
-flight_new = fmg.interpolate(flight)
+flight_new = era5_grid.interpolate(flight)
 ```
 
 All available parameters can be found at: https://codes.ecmwf.int/grib/param-db/
 
 You should use feature names in **lower case** with **underscores** for the list of features in `fastmeteo`.
 
-### Pressure levels
+### Use 137 model levels
 
-By default, `fastmeteo` extracts features for the following pressure levels (hPa), out of all available levels:
-
-```
-100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
-500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
-```
-
-You can also customize the desired levels (sorted), for example, as follows:
+By default, `fastmeteo` uses the 37 pressure level version of the ARCO ERA5 data. If you want to use the 137 model level version of the data, you can do so by specifying the `model_levels` parameter as follows:
 
 ```python
-levels = [500, 600, 700, 800, 900, 1000]
-fmg = Grid(local_store="/tmp/era5-zarr", levels=levels)
+era5_grid = ArcoEra5(local_store="/tmp/era5-zarr", model_levels=137)
+```
 
-flight_new = fmg.interpolate(flight)
+Note that not all levels are used. Only the following levels are used for construction of the interpolation grid:
+
+```
+DEFAULT_LEVELS_37 = [
+    100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450,
+    500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000
+]
+
+DEFAULT_LEVELS_137 = [
+    67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,
+    81,  82,  83,  84,  85,  86,  88,  89,  90,  91,  92,  93,  94,  95,
+    96,  97,  98,  99,  100, 101, 103, 104, 105, 107, 108, 110, 112, 114,
+    116, 119, 122, 128, 132, 137
+]
+```
+
+### Check the time interval of ARCO ERA5 data
+
+You can discover the time interval covered as follows:
+
+```python
+import xarray as xr
+from fastmeteo.grid import arco_era5_url
+
+dd = xr.open_zarr(arco_era5_url, chunks={"time": 48}, consolidated=True)
+dd.coords
 ```
