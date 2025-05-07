@@ -143,7 +143,7 @@ Above example will download the data for January 2022 to your `/path/to/era5-zar
 
 ## Options
 
-### Meteorological features
+### Differen meteorological features
 
 If you want more or different meteorological features than wind, temperature and humidity, specify the desired feature list as follows:
 
@@ -158,6 +158,9 @@ era5_grid = ArcoEra5(local_store="/tmp/era5-zarr", features=features)
 
 flight_new = era5_grid.interpolate(flight)
 ```
+
+> [!CAUTION]
+> If you get a `RuntimeError: Requested features not in local zarr`, it means you have initialized the `local_store` path with different features. Choose a different path or delete the old folder first.
 
 There are 273 variables from ARCO ERA5, which can be listed with the following code:
 
@@ -175,13 +178,13 @@ print(ds.variables)
 
 ### Use 137 model levels
 
-By default, `fastmeteo` uses the 37 pressure level version of the ARCO ERA5 data. If you want to use the 137 model level version of the data, you can do so by specifying the `model_levels` parameter as follows:
+By default, `fastmeteo` uses the 37-pressure-level version of the ARCO ERA5 data. If you want to use the 137 model level version of the data, you can do so by specifying the `model_levels` parameter as follows:
 
 ```python
 era5_grid = ArcoEra5(local_store="/tmp/era5-zarr", model_levels=137)
 ```
 
-Note that not all levels are used. Only the following levels are used for construction of the interpolation grid:
+Note that not all levels are used. Only the following levels are used for the construction of the interpolation grid:
 
 ```
 DEFAULT_LEVELS_37 = [
@@ -197,14 +200,35 @@ DEFAULT_LEVELS_137 = [
 ]
 ```
 
-### Check the time interval of ARCO ERA5 data
+> [!WARNING]
+> The list of features is different in the 137 model-level dataset. Only the following are available in 137 model-level dataset:
+> ```
+> divergence
+> fraction_of_cloud_cover
+> geopotential
+> ozone_mass_mixing_ratio
+> specific_cloud_ice_water_content
+> specific_cloud_liquid_water_content
+> specific_humidity
+> specific_rain_water_content
+> specific_snow_water_content
+> temperature
+> u_component_of_wind
+> v_component_of_wind
+> vertical_velocity
+> vorticity
+> ```
 
-You can discover the time interval covered as follows:
+### Check the property of the ARCO ERA5 data
+
+You can discover the properties of the data as:
 
 ```python
-import xarray as xr
-from fastmeteo.grid import arco_era5_url
+import xarray
+from fastmeteo.grid import arco_era5_url_level_37
 
-dd = xr.open_zarr(arco_era5_url, chunks={"time": 48}, consolidated=True)
-dd.coords
+ds = xarray.open_zarr(
+    arco_era5_url_level_37, chunks=None, storage_options=dict(token="anon")
+)
+ds
 ```
