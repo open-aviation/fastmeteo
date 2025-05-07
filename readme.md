@@ -116,6 +116,21 @@ client = Client()
 flight_new = client.submit_flight(flight)
 ```
 
+Note: The default server address is `http://localhost:9800`. You can run the server remotely, and use a different port if needed. For example:
+
+```bash
+fastmeteo-server --local-store /tmp/era5-zarr --port 8080
+```
+
+Then update the client code to point to the new server address: 
+
+```python
+server_address = "192.168.1.123"  # or:
+server_address = "my.server.example.com"
+
+client = Client(server=server_address, port=8080)
+```
+
 ## Pre-sync your data
 
 You can use the following command to pre-sync the data (only available for ARCO ERA5 data):
@@ -144,9 +159,19 @@ era5_grid = ArcoEra5(local_store="/tmp/era5-zarr", features=features)
 flight_new = era5_grid.interpolate(flight)
 ```
 
-All available parameters can be found at: https://codes.ecmwf.int/grib/param-db/
+There are 273 variables from ARCO ERA5, which can be listed with the following code:
 
-You should use feature names in **lower case** with **underscores** for the list of features in `fastmeteo`.
+```python
+import xarray
+
+ds = xarray.open_zarr(
+    "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3",
+    chunks=None,
+    storage_options=dict(token="anon"),
+)
+print(ds.variables)
+```
+
 
 ### Use 137 model levels
 
