@@ -90,7 +90,16 @@ class Grid:
         times = pd.to_datetime(df.timestamp).dt.tz_localize(None)
         index = df.index
 
-        df = df.reset_index(drop=True).assign(longitude_360=lambda d: d.longitude % 360)
+        df = (
+            df.reset_index(drop=True)
+            # remove features if exist
+            .drop(self.features, axis=1, errors="ignore")
+            # prevent pyarrow error
+            .assign(latitude=lambda x: x.latitude.astype(float))
+            .assign(longitude=lambda x: x.longitude.astype(float))
+            .assign(altitude=lambda x: x.altitude.astype(float))
+            .assign(longitude_360=lambda d: d.longitude % 360)
+        )
         start = times.min()
         stop = times.max()
 
