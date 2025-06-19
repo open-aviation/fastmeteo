@@ -1,5 +1,5 @@
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -8,10 +8,10 @@ import httpx
 import numpy as np
 import pandas as pd
 import xarray as xr
-from impunity import impunity
 from pitot.isa import pressure
 from tqdm.auto import tqdm
 
+# from impunity import impunity
 from ..core.grid import Grid
 
 tempdir = Path(tempfile.gettempdir())
@@ -27,18 +27,30 @@ DEFAULT_IP1_FEATURES = ['u', 'v', 't', 'r']
 # fmt:on
 
 
-def download_with_progress(url: str) -> BytesIO:
+def download_with_progress(url: str, file: None | Path = None) -> None | BytesIO:
     with httpx.stream("GET", url) as r:
         total_size = int(r.headers.get("Content-Length", 0))
-        buffer = BytesIO()
+        buffer = file.open("wb") if file else BytesIO()
         with tqdm(
             total=total_size, unit="B", unit_scale=True, desc=url.split("/")[-1]
         ) as progress_bar:
+            first_chunk = True
             for chunk in r.iter_bytes():
+                if first_chunk and chunk.startswith(b"<?xml"):
+                    raise RuntimeError(
+                        f"Error downloading data from {url}. "
+                        "Check if the requested data is available."
+                    )
+                first_chunk = False
                 buffer.write(chunk)
                 progress_bar.update(len(chunk))
-        buffer.seek(0)
-        return buffer
+
+        if isinstance(buffer, BytesIO):
+            buffer.seek(0)
+            return buffer
+
+        buffer.close()
+        return None
 
 
 class Arpege(Grid):
@@ -141,23 +153,23 @@ class Arpege(Grid):
         url = url.replace("+00:00", "Z")
 
         if not (tempdir / filename).exists():
-            buffer = download_with_progress(url)
-            value = buffer.getvalue()
-            if value.startswith(b"<?xml"):
-                raise RuntimeError(
-                    f"Error downloading data from {url}. "
-                    "Check if the requested data is available."
-                )
             # Save BytesIO to temporary file
             # cfgrib engine can't work directly with BytesIO
-            (tempdir / filename).write_bytes(value)
+            _buffer = download_with_progress(url, tempdir / filename)
 
         # Open the dataset using cfgrib engine from the temp file
-        ds = xr.open_dataset(tempdir / filename, engine="cfgrib")
+        ds = xr.open_dataset(
+            tempdir / filename,
+            engine="cfgrib",
+            backend_kwargs={
+                "filter_by_keys": {"typeOfLevel": "isobaricInhPa", "level": self.levels}
+            },
+        )
         ds = ds.assign(step=ds.time + ds.step).drop("time")
         ds = ds.rename(step="time")
 
-        return ds.sel(isobaricInhPa=self.levels)[self.features].compute()
+        # do not add .compute() here as it can be very costly on some computers
+        return ds.sel(isobaricInhPa=self.levels)[self.features]  # .compute()
 
     # @impunity
     def coords(self, flight: pd.DataFrame) -> dict[str, Any]:
@@ -173,3 +185,45 @@ class Arpege(Grid):
             "isobaricInhPa": (("points",), hPa),
         }
         return coords
+
+    def local_interpolate(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Interpolate data on a grid witout using a Zarr store which can be
+        costly to construct."""
+        times = pd.to_datetime(df.timestamp).dt.tz_localize(None)
+        index = df.index
+
+        df = df.reset_index(drop=True).assign(longitude_360=lambda d: d.longitude % 360)
+        start = times.min()
+        stop = times.max()
+
+        # local_dataset = self.sync_local(start, stop)
+        local_dataset = self.select_remote(start.floor("24h"))
+        interval = pd.date_range(start.floor("1h"), stop.ceil("1h"), freq="1h")
+
+        data_cropped = local_dataset.sel(
+            time=local_dataset.time.isin(interval.to_numpy(dtype="datetime64")),
+            latitude=slice(df.latitude.max() + 1, df.latitude.min() - 1),
+            longitude=slice(df.longitude_360.min() - 1, df.longitude_360.max() + 1),
+        )
+
+        if data_cropped.time.size == 0:
+            RuntimeWarning(f"data from {start} to {stop} is not available.")
+            return df
+
+        coords = self.coords(df)
+        ds = xr.Dataset(coords=coords)
+
+        new_params = data_cropped.interp(
+            ds.coords,
+            method="linear",
+            assume_sorted=False,
+            kwargs={"fill_value": None},
+        ).to_dataframe()[self.features]
+
+        flight_new = (
+            pd.concat([df, new_params], axis=1)
+            .drop(columns="longitude_360")
+            .set_index(index)
+        )
+
+        return flight_new
