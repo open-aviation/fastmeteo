@@ -1,3 +1,4 @@
+import warnings
 from abc import abstractmethod
 from typing import Any
 
@@ -75,15 +76,19 @@ class Grid:
             selected = self.select_remote(hour)
 
             if selected.time.size == 0:
-                RuntimeWarning(f"data from {start} to {stop} is not available remotely")
+                warnings.warn(
+                    f"data from {start} to {stop} is not available remotely",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
             else:
                 selected.to_zarr(
                     self.local_store, mode="a", append_dim="time", consolidated=True
                 )
 
-        # close to ensure the write is complete
+        # close stale handle and re-open to include appended data
         local_dataset.close()
-        return local_dataset
+        return xr.open_zarr(self.local_store, consolidated=True)
 
     def interpolate(self, df: pd.DataFrame) -> pd.DataFrame:
         """Interpolate data on a grid."""
@@ -113,7 +118,11 @@ class Grid:
         )
 
         if data_cropped.time.size == 0:
-            RuntimeWarning(f"data from {start} to {stop} is not available.")
+            warnings.warn(
+                f"data from {start} to {stop} is not available.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             return df
 
         coords = self.coords(df)
