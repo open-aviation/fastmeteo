@@ -1,10 +1,13 @@
 name: build and publish
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -31,4 +34,9 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN_FASTMETEO }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
 
