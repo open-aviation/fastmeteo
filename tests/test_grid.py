@@ -13,8 +13,8 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 import xarray as xr
-
 from fastmeteo.core.grid import Grid
 
 
@@ -151,8 +151,8 @@ class TestRuntimeWarningRaised:
                 "RuntimeWarning not emitted (missing warnings.warn)"
             )
 
-    def test_interpolate_warns_on_empty_cropped_data(self) -> None:
-        """When data_cropped.time.size == 0, a warning must fire (not silent return)."""
+    def test_interpolate_raises_on_empty_cropped_data(self) -> None:
+        """When no local data covers the request, fail before returning input."""
         with tempfile.TemporaryDirectory() as tmp:
             grid = StubGrid(local_store=tmp + "/test.zarr")
 
@@ -184,7 +184,8 @@ class TestRuntimeWarningRaised:
             with patch.object(grid, "select_remote", side_effect=_empty_remote):
                 with warnings.catch_warnings(record=True) as w:
                     warnings.simplefilter("always")
-                    result = grid.interpolate(flight)
+                    with pytest.raises(RuntimeError, match="is not available"):
+                        grid.interpolate(flight)
 
             runtime_warnings = [
                 x for x in w
@@ -193,5 +194,3 @@ class TestRuntimeWarningRaised:
             assert len(runtime_warnings) >= 1, (
                 "RuntimeWarning not emitted (missing warnings.warn)"
             )
-            # Should still return the dataframe (without ERA5 columns)
-            assert "temperature" not in result.columns

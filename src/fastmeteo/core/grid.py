@@ -118,12 +118,13 @@ class Grid:
         )
 
         if data_cropped.time.size == 0:
+            msg = f"data from {start} to {stop} is not available."
             warnings.warn(
-                f"data from {start} to {stop} is not available.",
+                msg,
                 RuntimeWarning,
                 stacklevel=2,
             )
-            return df
+            raise RuntimeError(msg)
 
         coords = self.coords(df)
         ds = xr.Dataset(coords=coords)
