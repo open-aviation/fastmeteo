@@ -1,6 +1,6 @@
 import warnings
 from abc import abstractmethod
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import xarray as xr
@@ -88,7 +88,7 @@ class Grid:
 
         # close stale handle and re-open to include appended data
         local_dataset.close()
-        return xr.open_zarr(self.local_store, consolidated=True)
+        return cast(xr.Dataset, xr.open_zarr(self.local_store, consolidated=True))
 
     def interpolate(self, df: pd.DataFrame) -> pd.DataFrame:
         """Interpolate data on a grid."""
