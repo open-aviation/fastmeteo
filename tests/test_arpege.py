@@ -48,7 +48,7 @@ def test_future_forecast_uses_published_run(mock_http, fixed_clock, aware):
     assert len(urls) == 2
     assert "2026-11-04T18:00:00Z" in urls[0]
     assert "2026-11-04T12:00:00Z" in urls[1]
-    assert all("meteofrance-pnt.s3.rbx.io.cloud.ovh.net" in url for url in urls)
+    assert all("files.data.gouv.fr/meteofrance-pnt/pnt/" in url for url in urls)
 
 
 def test_no_published_run_covers_forecast(mock_http, fixed_clock):

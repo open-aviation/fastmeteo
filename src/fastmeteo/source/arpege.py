@@ -13,11 +13,12 @@ from pitot.isa import pressure
 from tqdm.auto import tqdm
 
 # from impunity import impunity
-from ..core.grid import Grid
+from ..core.grid import Grid, close_longitude, to_grid_frame
 
 tempdir = Path(tempfile.gettempdir())
 
-bare_url = "https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt/"
+# Official Météo-France entry point; redirects to the current object storage.
+bare_url = "https://files.data.gouv.fr/meteofrance-pnt/pnt/"
 
 # fmt:off
 DEFAULT_LEVELS_37 = [
@@ -29,6 +30,7 @@ DEFAULT_IP1_FEATURES = ['u', 'v', 't', 'r']
 
 
 def download_with_progress(url: str, file: None | Path = None) -> None | BytesIO:
+    """Download a GRIB file and publish the cache only after a complete transfer."""
     with ExitStack() as stack:
         r = stack.enter_context(
             httpx.stream("GET", url, follow_redirects=True, timeout=60)
@@ -235,12 +237,15 @@ class Arpege(Grid):
         times = pd.to_datetime(df.timestamp).dt.tz_localize(None)
         index = df.index
 
-        df = df.reset_index(drop=True).assign(longitude_360=lambda d: d.longitude % 360)
+        df = df.reset_index(drop=True)
         start = times.min()
         stop = times.max()
 
         # local_dataset = self.sync_local(start, stop)
         local_dataset = self.select_remote(start.floor("24h"))
+        df = df.assign(
+            longitude_360=to_grid_frame(df.longitude, local_dataset.longitude)
+        )
         interval = pd.date_range(start.floor("1h"), stop.ceil("1h"), freq="1h")
 
         data_cropped = local_dataset.sel(
@@ -248,6 +253,7 @@ class Arpege(Grid):
             latitude=slice(df.latitude.max() + 1, df.latitude.min() - 1),
             longitude=slice(df.longitude_360.min() - 1, df.longitude_360.max() + 1),
         )
+        data_cropped = close_longitude(data_cropped, local_dataset)
 
         if data_cropped.time.size == 0:
             RuntimeWarning(f"data from {start} to {stop} is not available.")
