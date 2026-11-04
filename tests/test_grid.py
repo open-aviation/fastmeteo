@@ -105,6 +105,24 @@ class TestSyncLocalFreshHandle:
             )
             result.close()
 
+    def test_overlapping_forecast_blocks_are_cached_once(self, tmp_path) -> None:
+        """A forecast package can cover several hours already in the cache."""
+        grid = StubGrid(local_store=str(tmp_path / "forecast.zarr"))
+        hours = pd.date_range("2024-06-01", periods=5, freq="1h")
+        forecast = xr.concat(
+            [grid.select_remote(hour.to_datetime64()) for hour in hours], dim="time"
+        )
+        forecast.isel(time=slice(0, 2)).to_zarr(
+            grid.local_store, mode="w", consolidated=True
+        )
+        with patch.object(grid, "select_remote", return_value=forecast) as remote:
+            result = grid.sync_local(hours[2], hours[4])
+
+        assert result.indexes["time"].is_unique
+        assert set(result.time.values) == set(forecast.time.values)
+        assert remote.call_count == 1
+        result.close()
+
 
 # ---------- Bug 2: silent RuntimeWarning --------------------------------
 
@@ -128,9 +146,7 @@ class TestRuntimeWarningRaised:
                 return xr.Dataset(
                     {"temperature": (dims, np.empty((0, 3, 3)))},
                     coords={
-                        "time": pd.DatetimeIndex(
-                            [], dtype="datetime64[ns]"
-                        ),
+                        "time": pd.DatetimeIndex([], dtype="datetime64[ns]"),
                         "latitude": [39.0, 41.0, 43.0],
                         "longitude": [3.0, 5.0, 7.0],
                     },
@@ -144,10 +160,7 @@ class TestRuntimeWarningRaised:
                         stop="2024-06-01 02:00",
                     )
 
-            runtime_warnings = [
-                x for x in w
-                if issubclass(x.category, RuntimeWarning)
-            ]
+            runtime_warnings = [x for x in w if issubclass(x.category, RuntimeWarning)]
             assert len(runtime_warnings) >= 1, (
                 "RuntimeWarning not emitted (missing warnings.warn)"
             )
@@ -174,9 +187,7 @@ class TestRuntimeWarningRaised:
                 return xr.Dataset(
                     {"temperature": (dims, np.empty((0, 3, 3)))},
                     coords={
-                        "time": pd.DatetimeIndex(
-                            [], dtype="datetime64[ns]"
-                        ),
+                        "time": pd.DatetimeIndex([], dtype="datetime64[ns]"),
                         "latitude": [39.0, 41.0, 43.0],
                         "longitude": [3.0, 5.0, 7.0],
                     },
@@ -188,10 +199,7 @@ class TestRuntimeWarningRaised:
                     with pytest.raises(RuntimeError, match="is not available"):
                         grid.interpolate(flight)
 
-            runtime_warnings = [
-                x for x in w
-                if issubclass(x.category, RuntimeWarning)
-            ]
+            runtime_warnings = [x for x in w if issubclass(x.category, RuntimeWarning)]
             assert len(runtime_warnings) >= 1, (
                 "RuntimeWarning not emitted (missing warnings.warn)"
             )

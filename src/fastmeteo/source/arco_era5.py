@@ -1,10 +1,9 @@
 import os
-from typing import Annotated, Any, Literal, TypedDict
+from typing import Annotated, Any, Literal
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from impunity import impunity
 from pitot.isa import pressure
 
 from ..core.grid import Grid

@@ -4,6 +4,7 @@ from io import BytesIO
 from unittest.mock import Mock
 
 import httpx
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
@@ -90,6 +91,7 @@ def test_server_error_is_not_treated_as_unpublished(mock_http, fixed_clock):
         (200, b"<?xml version='1.0'?><Error/>", {}, RuntimeError),
         (200, b"", {}, RuntimeError),
         (200, b"GRIBpartial", {"Content-Length": "100"}, RuntimeError),
+        (200, b"GRIBpartial", {}, RuntimeError),
     ],
 )
 def test_failed_download_does_not_create_cache(
@@ -147,3 +149,67 @@ def test_invalid_cached_download_is_replaced(monkeypatch, tmp_path, cached):
     assert file.read_bytes() == b"GRIBtest7777"
     assert result.time.values[1] == pd.Timestamp("2026-11-04T13:00:00").to_datetime64()
     assert list(result.data_vars) == ["t"]
+
+
+@pytest.fixture
+def afternoon_forecast():
+    return xr.Dataset(
+        {
+            "t": (
+                ("time", "isobaricInhPa", "latitude", "longitude"),
+                np.full((4, 2, 3, 3), 250.0),
+            )
+        },
+        coords={
+            "time": pd.date_range("2026-11-04T12:00:00", periods=4, freq="1h"),
+            "isobaricInhPa": [200, 500],
+            "latitude": [42.0, 41.0, 40.0],
+            "longitude": [3.0, 4.0, 5.0],
+        },
+    )
+
+
+def test_local_interpolate_selects_run_for_actual_flight(
+    monkeypatch, afternoon_forecast
+):
+    grid = Arpege(local_store="unused", features=["t"])
+    selected = []
+
+    def select(hour):
+        selected.append(hour)
+        if hour < pd.Timestamp("2026-11-04T12:00:00"):
+            return afternoon_forecast.assign_coords(
+                time=afternoon_forecast.time - pd.Timedelta("12h")
+            )
+        return afternoon_forecast
+
+    monkeypatch.setattr(grid, "select_remote", select)
+    flight = pd.DataFrame(
+        {
+            "timestamp": [pd.Timestamp("2026-11-04T14:30:00")],
+            "latitude": [41.0],
+            "longitude": [4.0],
+            "altitude": [30_000],
+        },
+        index=[42],
+    )
+    result = grid.local_interpolate(flight)
+    assert selected == [pd.Timestamp("2026-11-04T14:00:00")]
+    assert result.index.tolist() == [42]
+    assert result.t.tolist() == [250.0]
+
+
+def test_local_interpolate_raises_for_unavailable_data(monkeypatch, afternoon_forecast):
+    grid = Arpege(local_store="unused", features=["t"])
+    monkeypatch.setattr(grid, "select_remote", lambda hour: afternoon_forecast)
+    flight = pd.DataFrame(
+        {
+            "timestamp": [pd.Timestamp("2026-11-04T20:30:00")],
+            "latitude": [41.0],
+            "longitude": [4.0],
+            "altitude": [30_000],
+        }
+    )
+    with pytest.warns(RuntimeWarning, match="not available"):
+        with pytest.raises(RuntimeError, match="not available"):
+            grid.local_interpolate(flight)

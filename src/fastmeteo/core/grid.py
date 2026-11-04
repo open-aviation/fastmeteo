@@ -102,14 +102,16 @@ class Grid:
                 "Requested features not in local zarr, create a new folder for this."
             )
 
+        cached_times = pd.DatetimeIndex(local_dataset.time.values)
         # ensure the data is available locally
         for hour_dt in pd.date_range(start.floor("1h"), stop.ceil("1h"), freq="1h"):
             hour = hour_dt.to_datetime64()
-            if local_dataset.sel(time=local_dataset.time.isin(hour)).time.size > 0:
+            if hour_dt in cached_times:
                 continue
 
             print(f"syncing from remote, hour: {hour_dt}")
             selected = self.select_remote(hour)
+            selected = selected.sel(time=~selected.time.isin(cached_times.values))
 
             if selected.time.size == 0:
                 warnings.warn(
@@ -120,6 +122,9 @@ class Grid:
             else:
                 selected.to_zarr(
                     self.local_store, mode="a", append_dim="time", consolidated=True
+                )
+                cached_times = cached_times.union(
+                    pd.DatetimeIndex(selected.time.values)
                 )
 
         # close stale handle and re-open to include appended data

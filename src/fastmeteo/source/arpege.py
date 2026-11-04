@@ -1,4 +1,5 @@
 import tempfile
+import warnings
 from contextlib import ExitStack
 from datetime import datetime
 from io import BufferedWriter, BytesIO
@@ -47,6 +48,7 @@ def download_with_progress(url: str, file: None | Path = None) -> None | BytesIO
             temporary_file = Path(directory) / file.name
             buffer = stack.enter_context(temporary_file.open("wb"))
         downloaded = 0
+        trailer = b""
         with tqdm(
             total=total_size, unit="B", unit_scale=True, desc=url.split("/")[-1]
         ) as progress_bar:
@@ -59,10 +61,11 @@ def download_with_progress(url: str, file: None | Path = None) -> None | BytesIO
                     )
                 first_chunk = False
                 buffer.write(chunk)
+                trailer = (trailer + chunk)[-4:]
                 downloaded += len(chunk)
                 progress_bar.update(len(chunk))
 
-        if downloaded == 0 or (total_size and downloaded != total_size):
+        if trailer != b"7777" or (total_size and downloaded != total_size):
             raise RuntimeError(f"Incomplete download from {url}.")
 
         if isinstance(buffer, BytesIO):
@@ -242,7 +245,7 @@ class Arpege(Grid):
         stop = times.max()
 
         # local_dataset = self.sync_local(start, stop)
-        local_dataset = self.select_remote(start.floor("24h"))
+        local_dataset = self.select_remote(start.floor("1h"))
         df = df.assign(
             longitude_360=to_grid_frame(df.longitude, local_dataset.longitude)
         )
@@ -256,8 +259,9 @@ class Arpege(Grid):
         data_cropped = close_longitude(data_cropped, local_dataset)
 
         if data_cropped.time.size == 0:
-            RuntimeWarning(f"data from {start} to {stop} is not available.")
-            return df
+            msg = f"data from {start} to {stop} is not available."
+            warnings.warn(msg, RuntimeWarning, stacklevel=2)
+            raise RuntimeError(msg)
 
         coords = self.coords(df)
         ds = xr.Dataset(coords=coords)
