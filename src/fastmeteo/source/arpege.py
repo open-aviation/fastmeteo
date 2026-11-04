@@ -1,8 +1,9 @@
 import tempfile
-from datetime import datetime, timezone
-from io import BytesIO
+from contextlib import ExitStack
+from datetime import datetime
+from io import BufferedWriter, BytesIO
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, cast
 
 import httpx
 import numpy as np
@@ -16,7 +17,7 @@ from ..core.grid import Grid
 
 tempdir = Path(tempfile.gettempdir())
 
-bare_url = "https://object.data.gouv.fr/meteofrance-pnt/pnt/"
+bare_url = "https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt/"
 
 # fmt:off
 DEFAULT_LEVELS_37 = [
@@ -28,28 +29,47 @@ DEFAULT_IP1_FEATURES = ['u', 'v', 't', 'r']
 
 
 def download_with_progress(url: str, file: None | Path = None) -> None | BytesIO:
-    with httpx.stream("GET", url) as r:
+    with ExitStack() as stack:
+        r = stack.enter_context(
+            httpx.stream("GET", url, follow_redirects=True, timeout=60)
+        )
+        r.raise_for_status()
         total_size = int(r.headers.get("Content-Length", 0))
-        buffer = file.open("wb") if file else BytesIO()
+        buffer: BytesIO | BufferedWriter
+        if file is None:
+            buffer = BytesIO()
+        else:
+            directory = stack.enter_context(
+                tempfile.TemporaryDirectory(dir=file.parent)
+            )
+            temporary_file = Path(directory) / file.name
+            buffer = stack.enter_context(temporary_file.open("wb"))
+        downloaded = 0
         with tqdm(
             total=total_size, unit="B", unit_scale=True, desc=url.split("/")[-1]
         ) as progress_bar:
             first_chunk = True
-            for chunk in r.iter_bytes():
-                if first_chunk and chunk.startswith(b"<?xml"):
+            for chunk in r.iter_bytes(chunk_size=64 * 1024):
+                if first_chunk and not chunk.startswith(b"GRIB"):
                     raise RuntimeError(
                         f"Error downloading data from {url}. "
                         "Check if the requested data is available."
                     )
                 first_chunk = False
                 buffer.write(chunk)
+                downloaded += len(chunk)
                 progress_bar.update(len(chunk))
+
+        if downloaded == 0 or (total_size and downloaded != total_size):
+            raise RuntimeError(f"Incomplete download from {url}.")
 
         if isinstance(buffer, BytesIO):
             buffer.seek(0)
             return buffer
 
         buffer.close()
+        assert file is not None
+        temporary_file.replace(file)
         return None
 
 
@@ -125,41 +145,64 @@ class Arpege(Grid):
         self.features = features or DEFAULT_IP1_FEATURES
         self.levels = levels or DEFAULT_LEVELS_37
 
-    def get_latest_run_time(self, time: np.datetime64) -> datetime:
-        # TODO
-
-        # The challenge here is to ensure we select a unique and consistent
-        # timestamp for each data point. Multiple files may contain forecasts
-        # for the same timestamp (from different model runs or forecast ranges),
-        # especially when considering different grids and time ranges.
-        #
-        # For the moment, we will consider that we stick to the 0.25 degree grid
-        # with only one file per day (time range 000H024H), and get only one
-        # file per day.
-
-        now = pd.to_datetime(time).tz_localize("UTC")
-        run_time = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
-        return run_time
-
-    def select_remote(self, hour: pd.DatetimeIndex) -> xr.Dataset:
-        runtime = self.get_latest_run_time(hour)
-
-        url = f"{bare_url}{runtime.isoformat()}/"
+    def _remote_url(self, runtime: datetime) -> str:
+        stamp = runtime.isoformat().replace("+00:00", "Z")
+        url = f"{bare_url}{stamp}/"
         url += f"{self.model.lower()}/{self.resolution}/{self.package}/"
         filename = f"{self.model.lower()}__{self.resolution}__{self.package}__"
-        filename += f"{self.time_range}__{runtime.isoformat()}.grib2"
-        filename = filename.replace("+00:00", "Z")
-        url += filename
-        url = url.replace("+00:00", "Z")
+        return url + f"{filename}{self.time_range}__{stamp}.grib2"
 
-        if not (tempdir / filename).exists():
+    def get_latest_run_time(self, time: np.datetime64 | pd.Timestamp) -> datetime:
+        """Find the latest published run whose forecast range covers time."""
+        requested = pd.Timestamp(time)
+        requested = (
+            requested.tz_localize("UTC")
+            if requested.tzinfo is None
+            else requested.tz_convert("UTC")
+        )
+        latest = min(requested, pd.Timestamp.now(tz="UTC")).floor("6h")
+        first_hour = int(self.time_range[:3])
+        last_hour = int(self.time_range[4:7])
+
+        with httpx.Client(follow_redirects=True, timeout=30) as client:
+            for offset in range(0, last_hour + 6, 6):
+                runtime = latest - pd.Timedelta(hours=offset)
+                lead = (requested - runtime) / pd.Timedelta(hours=1)
+                if lead < first_hour:
+                    continue
+                if lead > last_hour:
+                    break
+                response = client.head(self._remote_url(runtime))
+                if response.status_code == 404:
+                    continue  # The run may still be waiting for publication.
+                response.raise_for_status()
+                return cast(datetime, runtime.to_pydatetime())
+
+        raise RuntimeError(
+            f"No published ARPEGE {self.package} {self.time_range} forecast "
+            f"covers {requested}."
+        )
+
+    def select_remote(self, hour: np.datetime64 | pd.Timestamp) -> xr.Dataset:
+        runtime = self.get_latest_run_time(hour)
+        url = self._remote_url(runtime)
+        filename = url.rsplit("/", 1)[-1]
+
+        file = tempdir / filename
+        valid_cache = False
+        if file.exists() and file.stat().st_size >= 8:
+            with file.open("rb") as cached:
+                header = cached.read(4)
+                cached.seek(-4, 2)
+                valid_cache = header == b"GRIB" and cached.read(4) == b"7777"
+        if not valid_cache:
             # Save BytesIO to temporary file
             # cfgrib engine can't work directly with BytesIO
-            _buffer = download_with_progress(url, tempdir / filename)
+            download_with_progress(url, file)
 
         # Open the dataset using cfgrib engine from the temp file
         ds = xr.open_dataset(
-            tempdir / filename,
+            file,
             engine="cfgrib",
             backend_kwargs={
                 "filter_by_keys": {"typeOfLevel": "isobaricInhPa", "level": self.levels}

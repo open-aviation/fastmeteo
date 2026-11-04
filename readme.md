@@ -86,6 +86,11 @@ arpege_grid = Arpege(local_store="/tmp/arpege-zarr")
 flight_new = arpege_grid.interpolate(flight)
 ```
 
+ARPEGE uses the latest published model run that covers the requested time. The
+default forecast package covers the first 24 hours of that run. The first call
+downloads the full GRIB package (about 2.6 GB) and builds the local Zarr cache.
+Later calls can reuse the cached data.
+
 ## Server-client mode
 
 When running the tool in a server-client mode. The following script can be used to start a FastAPI service on the server. It handles the flight date request and obtains Google ARCO data if the partition is not on the server. After that, it will perform the interpolation of weather data and return the final data to the client.
